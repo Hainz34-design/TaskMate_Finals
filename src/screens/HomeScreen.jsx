@@ -3,24 +3,12 @@ import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import ScaledCanvas from '../components/ScaledCanvas';
 import { colors, font } from '../theme';
 
 const HIGH = { label: 'HIGH', color: '#ff6262', bg: 'rgba(255,98,98,0.22)', width: 45 };
 const MEDIUM = { label: 'MEDIUM', color: '#ffae00', bg: 'rgba(255,216,0,0.26)', width: 61 };
-
-const TODAY = [
-  { id: 't1', title: 'Complete Database laboratory', code: 'DCIT55', priority: HIGH },
-  { id: 't2', title: 'Review Open Source quiz', code: 'ITEC65B', priority: MEDIUM },
-];
-const UPCOMING = [
-  { id: 'u1', title: 'Read lecture 2 - Java', code: 'DCIT25', dot: '#ac4dff' },
-  { id: 'u2', title: 'Long quiz - UTS', code: 'GNED08', dot: '#ffae00' },
-  { id: 'u3', title: 'Essay - Basketball', code: 'FITT4', dot: '#ff6262' },
-  { id: 'u4', title: 'Answer Act 3 Page 20 - Graphics', code: 'ITEC70A', dot: '#ac4dff' },
-  { id: 'u5', title: 'Laboratory - File Handling', code: 'ITEC60A', dot: '#ffae00' },
-];
-const TOTAL_TASKS = 7;
 
 function Ring({ progress }) {
   const r = 40;
@@ -44,9 +32,18 @@ function Ring({ progress }) {
   );
 }
 
-/** Splash 11 - home screen with bottom navigation. */
 export default function HomeScreen() {
+  const navigation = useNavigation(); // <-- 1. INITIALIZE THE HOOK HERE
+
+  const [todayTasks, setTodayTasks] = useState([]);
+  const [upcomingTasks, setUpcomingTasks] = useState([]);
   const [done, setDone] = useState([]);
+
+  const [streak, setStreak] = useState(0);
+  const [focusScore, setFocusScore] = useState(0);
+  const [studyHours, setStudyHours] = useState('0h');
+  const [subjectsCount, setSubjectsCount] = useState(0);
+
   const intro = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -54,7 +51,9 @@ export default function HomeScreen() {
   }, []);
 
   const toggle = (id) => setDone((d) => (d.includes(id) ? d.filter((x) => x !== id) : [...d, id]));
-  const progress = done.length / TOTAL_TASKS;
+  
+  const totalTasksCount = todayTasks.length + upcomingTasks.length;
+  const progress = totalTasksCount > 0 ? done.length / totalTasksCount : 0;
   const pop = { opacity: intro, transform: [{ scale: intro.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }] };
 
   return (
@@ -88,12 +87,12 @@ export default function HomeScreen() {
                     <Text style={styles.ringText}>{Math.round(progress * 100)}%</Text>
                   </View>
                 </View>
-                <Text style={[styles.cardBig, { left: 137, top: 40 }]}>{done.length} of {TOTAL_TASKS}</Text>
+                <Text style={[styles.cardBig, { left: 137, top: 40 }]}>{done.length} of {totalTasksCount}</Text>
                 <Text style={[styles.cardBig, { left: 137, top: 66 }]}>tasks done</Text>
-                <Text style={[styles.cardSmall, { left: 137, top: 100 }]}>🔥 7-day streak</Text>
-                <Text style={[styles.cardBig, { left: 310, top: 28 }]}>2</Text>
+                <Text style={[styles.cardSmall, { left: 137, top: 100 }]}>🔥 {streak}-day streak</Text>
+                <Text style={[styles.cardBig, { left: 310, top: 28 }]}>{todayTasks.length}</Text>
                 <Text style={[styles.cardTiny, { left: 276, top: 52 }]}>today</Text>
-                <Text style={[styles.cardBig, { left: 310, top: 70 }]}>4</Text>
+                <Text style={[styles.cardBig, { left: 310, top: 70 }]}>{upcomingTasks.length}</Text>
                 <Text style={[styles.cardTiny, { left: 258, top: 94 }]}>upcoming</Text>
               </LinearGradient>
             </Animated.View>
@@ -101,9 +100,9 @@ export default function HomeScreen() {
             {/* stats */}
             <Animated.View style={[styles.stats, pop]}>
               {[
-                { value: '67', label: 'Focus Score', icon: 'flash-outline', tint: colors.purple },
-                { value: '7', label: 'Subjects', icon: 'book-outline', tint: '#2f6bff' },
-                { value: '4.5h', label: 'Study hrs', icon: 'time-outline', tint: '#ffc400' },
+                { value: focusScore.toString(), label: 'Focus Score', icon: 'flash-outline', tint: colors.purple },
+                { value: subjectsCount.toString(), label: 'Subjects', icon: 'book-outline', tint: '#2f6bff' },
+                { value: studyHours, label: 'Study hrs', icon: 'time-outline', tint: '#ffc400' },
               ].map((s) => (
                 <View key={s.label} style={styles.tile}>
                   <Ionicons name={s.icon} size={18} color={s.tint} />
@@ -117,35 +116,53 @@ export default function HomeScreen() {
             <View style={styles.sectionRow}>
               <Text style={styles.sectionTitle}>Today’s Tasks</Text>
               <View style={styles.countPill}>
-                <Text style={styles.countText}>{TODAY.length}</Text>
+                <Text style={styles.countText}>{todayTasks.length}</Text>
               </View>
             </View>
-            {TODAY.map((t) => (
-              <View key={t.id} style={styles.taskCard}>
-                <Pressable onPress={() => toggle(t.id)} style={[styles.check, { borderColor: t.priority.color }, done.includes(t.id) && { backgroundColor: t.priority.color }]}>
-                  {done.includes(t.id) && <Ionicons name="checkmark" size={18} color="#fff" />}
-                </Pressable>
-                <Text style={[styles.taskTitle, done.includes(t.id) && styles.struck]}>{t.title}</Text>
-                <View style={styles.metaRow}>
-                  <View style={[styles.badge, { backgroundColor: t.priority.bg, width: t.priority.width }]}>
-                    <Text style={[styles.badgeText, { color: t.priority.color }]}>{t.priority.label}</Text>
+            {todayTasks.length === 0 ? (
+              <Text style={styles.emptyText}>No tasks for today. Add one to get started!</Text>
+            ) : (
+              todayTasks.map((t) => (
+                <View key={t.id} style={styles.taskCard}>
+                  <Pressable onPress={() => toggle(t.id)} style={[styles.check, { borderColor: t.priority.color }, done.includes(t.id) && { backgroundColor: t.priority.color }]}>
+                    {done.includes(t.id) && <Ionicons name="checkmark" size={18} color="#fff" />}
+                  </Pressable>
+                  <Text style={[styles.taskTitle, done.includes(t.id) && styles.struck]}>{t.title}</Text>
+                  <View style={styles.metaRow}>
+                    <View style={[styles.badge, { backgroundColor: t.priority.bg, width: t.priority.width }]}>
+                      <Text style={[styles.badgeText, { color: t.priority.color }]}>{t.priority.label}</Text>
+                    </View>
+                    <Text style={styles.code}>{t.code}</Text>
                   </View>
-                  <Text style={styles.code}>{t.code}</Text>
                 </View>
-              </View>
-            ))}
+              ))
+            )}
 
             {/* upcoming */}
             <Text style={[styles.sectionTitle, { marginTop: 14 }]}>Upcoming</Text>
-            {UPCOMING.map((u) => (
-              <Pressable key={u.id} onPress={() => toggle(u.id)} style={styles.upCard}>
-                <View style={[styles.upDot, { backgroundColor: done.includes(u.id) ? '#c8c8c8' : u.dot }]} />
-                <Text style={[styles.taskTitle, { left: 52, top: 9 }, done.includes(u.id) && styles.struck]}>{u.title}</Text>
-                <Text style={[styles.code, { position: 'absolute', left: 52, top: 32 }]}>{u.code}</Text>
-              </Pressable>
-            ))}
+            {upcomingTasks.length === 0 ? (
+              <Text style={styles.emptyText}>No upcoming tasks scheduled.</Text>
+            ) : (
+              upcomingTasks.map((u) => (
+                <Pressable key={u.id} onPress={() => toggle(u.id)} style={styles.upCard}>
+                  <View style={[styles.upDot, { backgroundColor: done.includes(u.id) ? '#c8c8c8' : u.dot }]} />
+                  <Text style={[styles.taskTitle, { left: 52, top: 9 }, done.includes(u.id) && styles.struck]}>{u.title}</Text>
+                  <Text style={[styles.code, { position: 'absolute', left: 52, top: 32 }]}>{u.code}</Text>
+                </Pressable>
+              ))
+            )}
         </ScrollView>
       </ScaledCanvas>
+
+      {/* Floating Action Button */}
+      <Pressable 
+        style={styles.fab} 
+        onPress={() => navigation.navigate('AddTaskScreen')} // <-- 2. Matches name in TabNavigator
+      >
+        <LinearGradient colors={['#ac4dff', '#c98cfe']} style={styles.fabGradient}>
+          <Ionicons name="add" size={32} color="#fff" />
+        </LinearGradient>
+      </Pressable>
     </View>
   );
 }
@@ -188,4 +205,21 @@ const styles = StyleSheet.create({
   code: { fontFamily: font.semi, fontSize: 12, color: colors.lightGrey, opacity: 0.8 },
   upCard: { height: 61, borderRadius: 13, backgroundColor: '#fff', marginTop: 19, ...shadow },
   upDot: { position: 'absolute', left: 20, top: 26, width: 9, height: 9, borderRadius: 5 },
+  emptyText: { fontFamily: font.medium, fontSize: 14, color: colors.lightGrey, marginBottom: 12, fontStyle: 'italic' },
+  fab: {
+    position: 'absolute',
+    right: 24,
+    bottom: 90,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    ...shadow,
+    zIndex: 999,
+  },
+  fabGradient: {
+    flex: 1,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
