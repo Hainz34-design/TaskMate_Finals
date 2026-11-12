@@ -1,7 +1,10 @@
 {
-  "extends": "expo/tsconfig.base",
+  "extends": "@tsconfig/react-native/tsconfig.json",
   "compilerOptions": {
     "strict": true,
+    "ignoreDeprecations": "6.0",
+    "moduleResolution": "bundler",
+    "types": [],
     "paths": {
       "@/*": [
         "./src/*"
