@@ -27,7 +27,7 @@ export default function App() {
       {stage === 'signup' && <SignupScreen onCreateAccount={() => setStage('home')} onGoToLogin={() => setStage('login')} />}
       {stage === 'home' && (
         <NavigationContainer>
-          <TabNavigator />
+          <TabNavigator onLogout={() => setStage('login')} />
         </NavigationContainer>
       )}
     </View>

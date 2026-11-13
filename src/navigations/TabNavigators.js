@@ -1,30 +1,17 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, Dimensions } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import HomeScreen from '../screens/HomeScreen';
 import TasksScreen from '../screens/TasksScreen';
 import CalendarScreen from '../screens/CalendarScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 import AddTaskScreen from '../screens/AddTaskScreen';
-import ScaledCanvas from '../components/ScaledCanvas';
 import { colors, font } from '../theme';
 
 const Tab = createBottomTabNavigator();
-const { width } = Dimensions.get('window');
 
-function PlaceholderScreen({ route }) {
-  return (
-    <View style={styles.placeholderRoot}>
-      <ScaledCanvas>
-        <View style={styles.placeholder}>
-          <Text style={styles.placeholderText}>{route.name} screen is not part of splash 1–11</Text>
-        </View>
-      </ScaledCanvas>
-    </View>
-  );
-}
-
-export default function TabNavigator() {
+export default function TabNavigator({ onLogout }) {
   // Starts completely empty, ready for backend/user-added tasks
   const [tasks, setTasks] = useState([]);
 
@@ -46,58 +33,60 @@ export default function TabNavigator() {
         tabBarStyle: styles.tabBar,
         tabBarItemStyle: styles.tabItem,
         tabBarIcon: ({ color, focused }) => {
-          const icons = {
+          const iconName = {
             Home: 'home-outline',
             Tasks: 'checkbox-outline',
             Calendar: 'calendar-outline',
             Profile: 'person-outline',
-          };
+          }[route.name];
+
+          if (!iconName) return null;
+
           return (
             <View style={[styles.iconContainer, focused && styles.activeIconContainer]}>
-              <Ionicons name={icons[route.name]} size={24} color={color} />
+              <Ionicons name={iconName} size={24} color={color} />
             </View>
           );
         },
       })}
     >
-      <Tab.Screen 
-        name="Home" 
-        children={() => (
+      <Tab.Screen name="Home">
+        {() => (
           <HomeScreen tasks={tasks} onToggleTask={handleToggleTask} />
-        )} 
-      />
-      
-      <Tab.Screen 
-        name="Tasks" 
-        children={() => (
+        )}
+      </Tab.Screen>
+
+      <Tab.Screen name="Tasks">
+        {() => (
           <TasksScreen 
             tasks={tasks} 
             onToggleTask={handleToggleTask} 
             onDeleteTask={handleDeleteTask} 
           />
-        )} 
-      />
+        )}
+      </Tab.Screen>
 
-      <Tab.Screen 
-        name="Calendar" 
-        children={() => (
+      <Tab.Screen name="Calendar">
+        {() => (
           <CalendarScreen 
             tasks={tasks} 
             onToggleTask={handleToggleTask} 
             onDeleteTask={handleDeleteTask} 
           />
-        )} 
-      />
+        )}
+      </Tab.Screen>
 
-      <Tab.Screen name="Profile" component={PlaceholderScreen} />
+      <Tab.Screen name="Profile">
+        {() => <ProfileScreen tasks={tasks} onLogout={onLogout} />}
+      </Tab.Screen>
 
-      <Tab.Screen 
-        name="AddTaskScreen" 
-        component={AddTaskScreen} 
+      <Tab.Screen
+        name="AddTaskScreen"
+        component={AddTaskScreen}
         options={{
           tabBarButton: () => null,
           tabBarItemStyle: { display: 'none' },
-        }} 
+        }}
       />
     </Tab.Navigator>
   );
@@ -109,7 +98,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    width: width,
     height: 94,
     paddingTop: 10,
     paddingBottom: 8,
@@ -143,11 +131,4 @@ const styles = StyleSheet.create({
     fontSize: 11, 
     marginTop: 2 
   },
-  placeholderRoot: { flex: 1, backgroundColor: colors.screenBg },
-  placeholder: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  placeholderText: { fontFamily: font.medium, fontSize: 14, color: colors.lightGrey },
 });

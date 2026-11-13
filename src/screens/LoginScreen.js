@@ -90,7 +90,7 @@ export default function LoginScreen({ onLogin, onGoToSignup }) {
           <Pressable style={[styles.toggleHit, { left: 203 }]} onPress={onGoToSignup}>
             <Text style={[styles.toggleText, { color: '#b9b9b9' }]}>Sign Up</Text>
           </Pressable>
-          <Field label="EMAIL ADDRESS" labelTop={380} top={410} icon="mail-outline" placeholder="StudentName@cvsu.edu.ph" value={email} onChangeText={setEmail} keyboardType="email-address" />
+          <Field label="EMAIL ADDRESS" labelTop={380} top={410} icon="mail-outline" placeholder="Example@gmail.com" value={email} onChangeText={setEmail} keyboardType="email-address" />
           <Field label="PASSWORD" labelTop={492} top={521} icon="lock-closed-outline" placeholder="•••••••" value={password} onChangeText={setPassword} secure />
           <Text style={styles.forgot}>Forgot Password?</Text>
           <Pressable style={[styles.primary, { top: 631 }]} onPress={onLogin}>

@@ -97,8 +97,8 @@ export default function SignupScreen({ onCreateAccount, onGoToLogin }) {
             <Text style={[styles.toggleText, { color: '#fff' }]}>Sign Up</Text>
           </View>
 
-          <Field label="FULL NAME" labelTop={370} top={400} icon="person-outline" placeholder="Student full name" value={fullName} onChangeText={setFullName} />
-          <Field label="EMAIL ADDRESS" labelTop={458} top={486} icon="mail-outline" placeholder="StudentName@cvsu.edu.ph" value={email} onChangeText={setEmail} keyboardType="email-address" />
+          <Field label="FULL NAME" labelTop={370} top={400} icon="person-outline" placeholder="Full Name" value={fullName} onChangeText={setFullName} />
+          <Field label="EMAIL ADDRESS" labelTop={458} top={486} icon="mail-outline" placeholder="Example@gmail.com" value={email} onChangeText={setEmail} keyboardType="email-address" />
           <Field label="PASSWORD" labelTop={542} top={571} icon="lock-closed-outline" placeholder="•••••••" value={password} onChangeText={setPassword} secure />
           <Pressable style={[styles.primary, { top: 651 }]} onPress={onCreateAccount}>
             <Text style={styles.primaryText}>Create Account</Text>
