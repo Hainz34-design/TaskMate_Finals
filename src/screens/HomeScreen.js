@@ -25,8 +25,7 @@ function Ring({ progress }) {
         strokeLinecap="round"
         fill="none"
         strokeDasharray={`${c * progress} ${c}`}
-        rotation={-90}
-        origin="47.5, 47.5"
+        transform="rotate(-90 47.5 47.5)"
       />
     </Svg>
   );
@@ -65,7 +64,7 @@ export default function HomeScreen() {
               <View>
                 <Text style={styles.date}>Monday, Jun 1</Text>
                 <Text style={styles.greeting}>Good Day,</Text>
-                <Text style={[styles.greeting, { color: colors.purple }]}>Student!</Text>
+                <Text style={[styles.greeting, { color: colors.purple }]}>Users!</Text>
               </View>
               <View style={styles.headerIcons}>
                 <View style={styles.bell}>

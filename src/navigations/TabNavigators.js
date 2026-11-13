@@ -94,7 +94,10 @@ export default function TabNavigator() {
       <Tab.Screen 
         name="AddTaskScreen" 
         component={AddTaskScreen} 
-        options={{ tabBarButton: () => null }} 
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+        }} 
       />
     </Tab.Navigator>
   );
