@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import ScaledCanvas from '../components/ScaledCanvas';
 import { colors, font } from '../theme';
 
+// Reusable statistic card para pare-pareho ang icon/value/label layout.
 function StatCard({ icon, value, label, tint, bubble }) {
   return (
     <View style={styles.statCard}>
@@ -19,6 +20,7 @@ function StatCard({ icon, value, label, tint, bubble }) {
   );
 }
 
+// Setting row na nag-u-update ng boolean value kapag pinindot ang switch.
 function ToggleRow({ icon, label, value, onValueChange, tint = colors.purple }) {
   return (
     <View style={styles.settingRow}>
@@ -38,6 +40,7 @@ function ToggleRow({ icon, label, value, onValueChange, tint = colors.purple }) 
   );
 }
 
+// Setting row na nagpapatawag ng parent screen action kapag pinindot.
 function LinkRow({ icon, label, onPress, tint = colors.purple }) {
   return (
     <Pressable style={styles.settingRow} onPress={onPress} accessibilityRole="button">
@@ -50,18 +53,25 @@ function LinkRow({ icon, label, onPress, tint = colors.purple }) {
   );
 }
 
-export default function ProfileScreen({ tasks = [], onLogout }) {
+// Ipakita ang session profile, task stats, settings, at logout confirmation.
+export default function ProfileScreen({ tasks = [], onLogout, user }) {
+  // Local toggles lang muna; wala pang notification/theme preference persistence.
   const [pushNotifications, setPushNotifications] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [studyReminders, setStudyReminders] = useState(false);
+  // I-derive ang stats sa ipinasa na tasks para walang duplicate stored counts.
   const completedCount = tasks.filter((task) => task.completed).length;
   const subjectCount = new Set(tasks.map((task) => task.subject).filter(Boolean)).size;
   const completion = tasks.length ? Math.round((completedCount / tasks.length) * 100) : 0;
+  // Avatar placeholder ay unang letra ng pangalan, o U kung hindi pa available.
+  const initials = user?.fullName?.trim()?.[0]?.toUpperCase() || 'U';
 
+  // Temporary feedback habang hindi pa nakakabit ang feature sa app/backend.
   const showComingSoon = (feature) => {
     Alert.alert(feature, 'This feature is not available yet.');
   };
 
+  // Kumpirmahin muna dahil ang onLogout ay magtatapos ng kasalukuyang session.
   const confirmLogout = () => {
     Alert.alert('Log out', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
@@ -90,13 +100,10 @@ export default function ProfileScreen({ tasks = [], onLogout }) {
               <View pointerEvents="none" style={styles.heroGlowBottom} />
               <View style={styles.heroContent}>
                 <View style={styles.initialBox}>
-                  <Text style={styles.initial}>L</Text>
+                  <Text style={styles.initial}>{initials}</Text>
                 </View>
-                <Text style={styles.profileName}>Personal</Text>
-                <Text style={styles.email}>Example@gmail.com</Text>
-                <View style={styles.courseBadge}>
-                  <Text style={styles.courseText}>CVSU · Information Technology</Text>
-                </View>
+                <Text style={styles.profileName}>{user?.fullName || 'TaskMate User'}</Text>
+                <Text style={styles.email}>{user?.email || ''}</Text>
               </View>
             </LinearGradient>
           </View>
@@ -219,8 +226,6 @@ const styles = StyleSheet.create({
   initial: { fontFamily: font.regular, fontSize: 58, color: '#fff', lineHeight: 70 },
   profileName: { marginTop: 5, fontFamily: font.bold, fontSize: 30, color: '#fff', textShadowColor: 'rgba(0,0,0,0.4)', textShadowRadius: 5 },
   email: { marginTop: 1, fontFamily: font.regular, fontSize: 12, color: '#fff', textShadowColor: 'rgba(0,0,0,0.55)', textShadowRadius: 4 },
-  courseBadge: { marginTop: 12, paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, backgroundColor: 'rgba(236,245,248,0.68)' },
-  courseText: { fontFamily: font.semi, fontSize: 11, color: '#fff' },
   statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 17 },
   statCard: {
     width: 86,

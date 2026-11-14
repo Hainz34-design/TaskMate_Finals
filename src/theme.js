@@ -1,6 +1,8 @@
+// Base size ng Figma screens; ginagamit ito para i-scale ang layout sa device.
 export const DESIGN_W = 402;
 export const DESIGN_H = 874;
 
+// Iisang palette para pare-pareho ang primary, text, at background colors.
 export const colors = {
   purple: '#ac4dff',
   purpleText: '#ad50fe',
@@ -13,6 +15,7 @@ export const colors = {
   screenBg: '#f5f5f5',
 };
 
+// Font names na nirerehistro muna ng App bago ipakita ang screens.
 export const font = {
   regular: 'Poppins_400Regular',
   medium: 'Poppins_500Medium',

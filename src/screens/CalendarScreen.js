@@ -5,18 +5,22 @@ import { LinearGradient } from 'expo-linear-gradient';
 import ScaledCanvas from '../components/ScaledCanvas';
 import { colors, font } from '../theme';
 
+// Ipinapakita ang buwan, task dots, at tasks para sa napiling araw.
 export default function CalendarScreen({ tasks = [], onToggleTask, onDeleteTask }) {
+  // Kunin ang initial month/day mula sa system date ng device.
   const today = new Date();
   const [currentMonthIndex, setCurrentMonthIndex] = useState(today.getMonth()); // 0-11
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [selectedDate, setSelectedDate] = useState(String(today.getDate()));
   const [weather, setWeather] = useState(null);
 
+  // JavaScript months ay 0-11, kaya tugma ang index sa array position.
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const monthName = months[currentMonthIndex];
 
-  // Fetch Live Weather API for Cavite
+  // Placeholder weather request; palitan ang API key bago asahang may live data.
   useEffect(() => {
+    // I-request ang Cavite weather at itabi lang ang values na kailangan ng card.
     const fetchWeather = async () => {
       try {
         const response = await fetch(
@@ -24,6 +28,7 @@ export default function CalendarScreen({ tasks = [], onToggleTask, onDeleteTask 
         );
         const data = await response.json();
         if (response.ok) {
+          // I-convert sa display-ready values ang raw response ng weather service.
           setWeather({
             temp: Math.round(data.main.temp),
             description: data.weather[0].description,
@@ -31,30 +36,33 @@ export default function CalendarScreen({ tasks = [], onToggleTask, onDeleteTask 
           });
         }
       } catch (error) {
+        // Panatilihin ang screen kahit walang network o invalid ang API key.
         console.log('Weather API error:', error);
       }
     };
     fetchWeather();
   }, []);
 
-  // Precise Calendar Grid Calculation with Trailing Padding
+  // Kunin ang weekday ng unang araw at bilang ng days sa current month.
   const firstDayIndex = new Date(currentYear, currentMonthIndex, 1).getDay(); // 0 (Sun) to 6 (Sat)
   const totalDays = new Date(currentYear, currentMonthIndex + 1, 0).getDate();
 
+  // Nulls ang blank cells; numbers ang dates na puwedeng piliin ng user.
   const daysArray = [];
-  // Offset padding for the start of the month
+  // Maglagay ng blank cells para ang unang date mapunta sa tamang weekday.
   for (let i = 0; i < firstDayIndex; i++) {
     daysArray.push(null);
   }
-  // All days of the month
+  // Idagdag ang bawat date ng buwan pagkatapos ng leading blanks.
   for (let d = 1; d <= totalDays; d++) {
     daysArray.push(d);
   }
-  // Trailing padding to complete the final row (ensures uniform 7-column grid alignment)
+  // Punuin ang huling row hanggang multiple of 7 para pantay ang grid.
   while (daysArray.length % 7 !== 0) {
     daysArray.push(null);
   }
 
+  // Bumalik sa Disyembre ng nakaraang taon kapag Enero ang kasalukuyang buwan.
   const handlePrevMonth = () => {
     if (currentMonthIndex === 0) {
       setCurrentMonthIndex(11);
@@ -64,6 +72,7 @@ export default function CalendarScreen({ tasks = [], onToggleTask, onDeleteTask 
     }
   };
 
+  // Lumipat sa Enero ng susunod na taon kapag Disyembre ang kasalukuyang buwan.
   const handleNextMonth = () => {
     if (currentMonthIndex === 11) {
       setCurrentMonthIndex(0);
@@ -73,10 +82,11 @@ export default function CalendarScreen({ tasks = [], onToggleTask, onDeleteTask 
     }
   };
 
-  // Match backend tasks to calendar day indicator dots
+  // Gawing hanggang 3 unique priority dots ang tasks na tumutugma sa day number.
   const getTaskDotsForDay = (dayNum) => {
     if (!dayNum) return [];
     const dayStr = String(dayNum);
+    // Kasalukuyang string match ito; dapat consistent ang dueDate format sa tasks.
     const matchingTasks = tasks.filter(t => t.dueDate && t.dueDate.includes(dayStr));
     
     const colorsList = matchingTasks.map(t => {
@@ -87,6 +97,7 @@ export default function CalendarScreen({ tasks = [], onToggleTask, onDeleteTask 
     return [...new Set(colorsList)].slice(0, 3);
   };
 
+  // I-filter ulit ang tasks para sa detail list sa ilalim ng calendar.
   const selectedDayTasks = tasks.filter(t => {
     if (!t.dueDate) return false;
     return t.dueDate.includes(String(selectedDate));
@@ -165,7 +176,7 @@ export default function CalendarScreen({ tasks = [], onToggleTask, onDeleteTask 
             </View>
           </View>
 
-          {/* Weather API Card at Bottom of Calendar */}
+          {/* Ipakita ang weather kapag dumating ang API response o loading fallback. */}
           <View style={styles.weatherCard}>
             <View style={styles.weatherInfoRow}>
               <Ionicons name="partly-sunny-outline" size={28} color={colors.purple} />
@@ -177,7 +188,7 @@ export default function CalendarScreen({ tasks = [], onToggleTask, onDeleteTask 
             </View>
           </View>
 
-          {/* Selected Date Tasks Section */}
+          {/* Ipakita ang tasks para sa napiling date o empty-state message. */}
           <Text style={styles.sectionTitle}>Tasks for {monthName} {selectedDate}</Text>
 
           {selectedDayTasks.length === 0 ? (

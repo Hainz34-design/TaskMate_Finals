@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Alert, Animated, Easing, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import ScaledCanvas from '../components/ScaledCanvas';
@@ -7,7 +7,9 @@ import { colors, font } from '../theme';
 
 const book = require('../../assets/book.svg');
 
+// Shared input para sa auth forms; secure fields may eye button para makita/matago ang password.
 function Field({ top, label, labelTop, icon, placeholder, value, onChangeText, secure, keyboardType }) {
+  // Visibility state ay local sa field para hindi maapektuhan ang ibang inputs.
   const [visible, setVisible] = useState(false);
   return (
     <>
@@ -34,6 +36,7 @@ function Field({ top, label, labelTop, icon, placeholder, value, onChangeText, s
   );
 }
 
+// I-center ang "or continue with" label sa pagitan ng dalawang divider lines.
 const Divider = ({ top }) => (
   <>
     <View style={[styles.line, { left: 31, top: top + 9 }]} />
@@ -42,6 +45,7 @@ const Divider = ({ top }) => (
   </>
 );
 
+// Google/Apple UI pa lang ito; onPress ay nagpapaliwanag na hindi pa konektado ang OAuth.
 const Socials = ({ top, onPress }) => (
   <>
     <Pressable style={[styles.social, { left: 31, top }]} onPress={onPress}>
@@ -53,12 +57,19 @@ const Socials = ({ top, onPress }) => (
   </>
 );
 
+// Kinokolekta ang account details at ipinapasa ang registration sa App/backend.
 export default function SignupScreen({ onCreateAccount, onGoToLogin }) {
-  const intro = useRef(new Animated.Value(0)).current;
+  // Intro value ang nag-a-animate ng header at nagpapakita ng form pagkatapos.
+  const [intro] = useState(() => new Animated.Value(0));
+  // Controlled input values na ipinapasa sa register endpoint.
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  // Loading/error state para maiwasan ang duplicate request at makita ang failure.
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
+  // Patakbuhin nang isang beses ang entrance animation kapag na-mount ang screen.
   useEffect(() => {
     Animated.timing(intro, {
       toValue: 1,
@@ -66,15 +77,31 @@ export default function SignupScreen({ onCreateAccount, onGoToLogin }) {
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
-  }, []);
+  }, [intro]);
 
   const shapeY = intro.interpolate({ inputRange: [0, 1], outputRange: [-263, 0] });
   const logoY = intro.interpolate({ inputRange: [0, 1], outputRange: [-230, 0] });
   const formOpacity = intro.interpolate({ inputRange: [0.5, 1], outputRange: [0, 1], extrapolate: 'clamp' });
 
+  // I-block ang double submit habang pending; ipakita ang backend validation errors.
+  const submitRegistration = async () => {
+    if (submitting) return;
+
+    setErrorMessage('');
+    setSubmitting(true);
+    try {
+      await onCreateAccount(fullName, email, password);
+    } catch (error) {
+      setErrorMessage(error.message || 'Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <View style={styles.root}>
       <ScaledCanvas>
+        {/* Header shapes at logo na bumababa papunta sa final position. */}
         <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { transform: [{ translateY: shapeY }] }]}>
           <View style={styles.headerWhite} />
           <View style={styles.headerBite} />
@@ -87,6 +114,7 @@ export default function SignupScreen({ onCreateAccount, onGoToLogin }) {
           </View>
         </Animated.View>
 
+        {/* Inputs/buttons fade in kapag sapat na ang header animation. */}
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: formOpacity }]}>
           <View style={styles.toggle} />
           <View style={[styles.toggleActive, { left: 203 }]} />
@@ -97,15 +125,18 @@ export default function SignupScreen({ onCreateAccount, onGoToLogin }) {
             <Text style={[styles.toggleText, { color: '#fff' }]}>Sign Up</Text>
           </View>
 
-          <Field label="FULL NAME" labelTop={370} top={400} icon="person-outline" placeholder="Full Name" value={fullName} onChangeText={setFullName} />
-          <Field label="EMAIL ADDRESS" labelTop={458} top={486} icon="mail-outline" placeholder="Example@gmail.com" value={email} onChangeText={setEmail} keyboardType="email-address" />
-          <Field label="PASSWORD" labelTop={542} top={571} icon="lock-closed-outline" placeholder="•••••••" value={password} onChangeText={setPassword} secure />
-          <Pressable style={[styles.primary, { top: 651 }]} onPress={onCreateAccount}>
-            <Text style={styles.primaryText}>Create Account</Text>
+          <Field label="FULL NAME" labelTop={370} top={400} icon="person-outline" placeholder="Full Name" value={fullName} onChangeText={(value) => { setFullName(value); setErrorMessage(''); }} />
+          <Field label="EMAIL ADDRESS" labelTop={458} top={486} icon="mail-outline" placeholder="Example@gmail.com" value={email} onChangeText={(value) => { setEmail(value); setErrorMessage(''); }} keyboardType="email-address" />
+          <Field label="PASSWORD" labelTop={542} top={571} icon="lock-closed-outline" placeholder="•••••••" value={password} onChangeText={(value) => { setPassword(value); setErrorMessage(''); }} secure />
+          {errorMessage ? (
+            <Text style={styles.error} accessibilityRole="alert">{errorMessage}</Text>
+          ) : null}
+          <Pressable style={[styles.primary, { top: 651 }]} onPress={submitRegistration} disabled={submitting}>
+            <Text style={styles.primaryText}>{submitting ? 'Creating account...' : 'Create Account'}</Text>
             <Ionicons name="arrow-forward" size={16} color="#fff" />
           </Pressable>
           <Divider top={727} />
-          <Socials top={762} onPress={onCreateAccount} />
+          <Socials top={762} onPress={() => Alert.alert('Not available yet', 'Google and Apple sign-in are not connected yet.')} />
         </Animated.View>
       </ScaledCanvas>
     </View>
@@ -128,6 +159,7 @@ const styles = StyleSheet.create({
   inputIcon: { position: 'absolute', left: 16 },
   inputText: { marginLeft: 55, marginRight: 46, height: 48, padding: 0, fontFamily: font.semi, fontSize: 12, color: '#444' },
   eye: { position: 'absolute', right: 15 },
+  error: { position: 'absolute', left: 31, top: 614, width: 341, height: 34, fontFamily: font.semi, fontSize: 10, lineHeight: 13, textAlign: 'center', textAlignVertical: 'center', color: '#fff' },
   primary: { position: 'absolute', left: 31, width: 341, height: 59, borderRadius: 15, backgroundColor: colors.darkPurple, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   primaryText: { fontFamily: font.bold, fontSize: 20, color: '#fff' },
   line: { position: 'absolute', width: 110, height: 1, backgroundColor: 'rgba(235,229,229,0.85)' },

@@ -10,8 +10,10 @@ import { colors, font } from '../theme';
 const HIGH = { label: 'HIGH', color: '#ff6262', bg: 'rgba(255,98,98,0.22)', width: 45 };
 const MEDIUM = { label: 'MEDIUM', color: '#ffae00', bg: 'rgba(255,216,0,0.26)', width: 61 };
 
+// I-convert ang completion fraction sa SVG dash length para umikot ang ring.
 function Ring({ progress }) {
   const r = 40;
+  // Circumference ang kabuuang path; progress portion lang ang gagawing puti.
   const c = 2 * Math.PI * r;
   return (
     <Svg width={95} height={95} viewBox="0 0 95 95">
@@ -31,9 +33,13 @@ function Ring({ progress }) {
   );
 }
 
-export default function HomeScreen() {
-  const navigation = useNavigation(); // <-- 1. INITIALIZE THE HOOK HERE
+// Home dashboard: summary cards, local task lists, at Add Task shortcut.
+export default function HomeScreen({ user }) {
+  const navigation = useNavigation();
+  // Unang pangalan lang ang gamitin para magkasya ang greeting sa mobile header.
+  const displayName = user?.fullName?.trim().split(/\s+/)[0] || 'User';
 
+  // Placeholder values muna; walang backend task loading sa screen na ito.
   const [todayTasks, setTodayTasks] = useState([]);
   const [upcomingTasks, setUpcomingTasks] = useState([]);
   const [done, setDone] = useState([]);
@@ -45,14 +51,18 @@ export default function HomeScreen() {
 
   const intro = useRef(new Animated.Value(0)).current;
 
+  // I-animate ang progress content mula maliit/transparent tungo sa normal.
   useEffect(() => {
     Animated.timing(intro, { toValue: 1, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
   }, []);
 
+  // Kung completed na, alisin sa done IDs; kung hindi, idagdag ito.
   const toggle = (id) => setDone((d) => (d.includes(id) ? d.filter((x) => x !== id) : [...d, id]));
   
+  // Iwasan ang division by zero kapag walang tasks sa dalawang listahan.
   const totalTasksCount = todayTasks.length + upcomingTasks.length;
   const progress = totalTasksCount > 0 ? done.length / totalTasksCount : 0;
+  // Parehong animation value ang gamit ng dashboard cards para sabay ang galaw.
   const pop = { opacity: intro, transform: [{ scale: intro.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }] };
 
   return (
@@ -64,14 +74,14 @@ export default function HomeScreen() {
               <View>
                 <Text style={styles.date}>Monday, Jun 1</Text>
                 <Text style={styles.greeting}>Good Day,</Text>
-                <Text style={[styles.greeting, { color: colors.purple }]}>Users!</Text>
+                <Text style={[styles.greeting, { color: colors.purple }]}>{displayName}!</Text>
               </View>
               <View style={styles.headerIcons}>
                 <View style={styles.bell}>
                   <Ionicons name="notifications-outline" size={24} color={colors.purple} />
                 </View>
                 <LinearGradient colors={['#ac4dff', '#c98cfe']} style={styles.avatar}>
-                  <Text style={styles.avatarText}>S</Text>
+                  <Text style={styles.avatarText}>{displayName.charAt(0).toUpperCase()}</Text>
                 </LinearGradient>
               </View>
             </View>
@@ -153,7 +163,7 @@ export default function HomeScreen() {
         </ScrollView>
       </ScaledCanvas>
 
-      {/* Floating Action Button */}
+      {/* Floating button na nagbubukas ng nakatagong Add Task screen. */}
       <Pressable 
         style={styles.fab} 
         onPress={() => navigation.navigate('AddTaskScreen')} // <-- 2. Matches name in TabNavigator

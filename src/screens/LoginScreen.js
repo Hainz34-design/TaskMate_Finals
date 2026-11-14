@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Alert, Animated, Easing, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import ScaledCanvas from '../components/ScaledCanvas';
@@ -7,7 +7,9 @@ import { colors, font } from '../theme';
 
 const book = require('../../assets/book.svg');
 
+// Shared input para sa auth forms; secure fields may eye button para makita/matago ang password.
 function Field({ top, label, labelTop, icon, placeholder, value, onChangeText, secure, keyboardType }) {
+  // Visibility state ay local sa field para hindi maapektuhan ang ibang inputs.
   const [visible, setVisible] = useState(false);
   return (
     <>
@@ -34,6 +36,7 @@ function Field({ top, label, labelTop, icon, placeholder, value, onChangeText, s
   );
 }
 
+// I-center ang "or continue with" label sa pagitan ng dalawang divider lines.
 const Divider = ({ top }) => (
   <>
     <View style={[styles.line, { left: 31, top: top + 9 }]} />
@@ -42,6 +45,7 @@ const Divider = ({ top }) => (
   </>
 );
 
+// Google/Apple UI pa lang ito; onPress ay nagpapaliwanag na hindi pa konektado ang OAuth.
 const Socials = ({ top, onPress }) => (
   <>
     <Pressable style={[styles.social, { left: 31, top }]} onPress={onPress}>
@@ -53,22 +57,45 @@ const Socials = ({ top, onPress }) => (
   </>
 );
 
+// Kinokolekta ang credentials at ipinapasa ang login attempt sa App/backend.
 export default function LoginScreen({ onLogin, onGoToSignup }) {
-  const intro = useRef(new Animated.Value(0)).current;
+  // Intro value ang nag-a-animate ng header at nagpapakita ng form pagkatapos.
+  const [intro] = useState(() => new Animated.Value(0));
+  // Controlled input state para ang kasalukuyang values ang maipasa sa submit.
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  // Ginagamit para hindi maulit ang request at para magpakita ng server errors.
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
+  // Patakbuhin nang isang beses ang entrance animation kapag na-mount ang screen.
   useEffect(() => {
     Animated.timing(intro, { toValue: 1, duration: 700, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
-  }, []);
+  }, [intro]);
 
   const shapeY = intro.interpolate({ inputRange: [0, 1], outputRange: [-263, 0] });
   const logoY = intro.interpolate({ inputRange: [0, 1], outputRange: [-230, 0] });
   const formOpacity = intro.interpolate({ inputRange: [0.5, 1], outputRange: [0, 1], extrapolate: 'clamp' });
 
+  // I-block ang double submit habang pending; panatilihin ang error para makita ng user.
+  const submitLogin = async () => {
+    if (submitting) return;
+
+    setErrorMessage('');
+    setSubmitting(true);
+    try {
+      await onLogin(email, password);
+    } catch (error) {
+      setErrorMessage(error.message || 'Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <View style={styles.root}>
       <ScaledCanvas>
+        {/* Header shapes at logo na bumababa papunta sa final position. */}
         <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { transform: [{ translateY: shapeY }] }]}>
           <View style={styles.headerWhite} />
           <View style={styles.headerBite} />
@@ -81,6 +108,7 @@ export default function LoginScreen({ onLogin, onGoToSignup }) {
           </View>
         </Animated.View>
 
+        {/* Inputs/buttons fade in kapag sapat na ang header animation. */}
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: formOpacity }]}>
           <View style={styles.toggle} />
           <View style={styles.toggleActive} />
@@ -90,15 +118,18 @@ export default function LoginScreen({ onLogin, onGoToSignup }) {
           <Pressable style={[styles.toggleHit, { left: 203 }]} onPress={onGoToSignup}>
             <Text style={[styles.toggleText, { color: '#b9b9b9' }]}>Sign Up</Text>
           </Pressable>
-          <Field label="EMAIL ADDRESS" labelTop={380} top={410} icon="mail-outline" placeholder="Example@gmail.com" value={email} onChangeText={setEmail} keyboardType="email-address" />
-          <Field label="PASSWORD" labelTop={492} top={521} icon="lock-closed-outline" placeholder="•••••••" value={password} onChangeText={setPassword} secure />
+          <Field label="EMAIL ADDRESS" labelTop={380} top={410} icon="mail-outline" placeholder="Example@gmail.com" value={email} onChangeText={(value) => { setEmail(value); setErrorMessage(''); }} keyboardType="email-address" />
+          <Field label="PASSWORD" labelTop={492} top={521} icon="lock-closed-outline" placeholder="•••••••" value={password} onChangeText={(value) => { setPassword(value); setErrorMessage(''); }} secure />
           <Text style={styles.forgot}>Forgot Password?</Text>
-          <Pressable style={[styles.primary, { top: 631 }]} onPress={onLogin}>
-            <Text style={styles.primaryText}>Log In</Text>
+          {errorMessage ? (
+            <Text style={styles.error} accessibilityRole="alert">{errorMessage}</Text>
+          ) : null}
+          <Pressable style={[styles.primary, { top: 631 }]} onPress={submitLogin} disabled={submitting}>
+            <Text style={styles.primaryText}>{submitting ? 'Logging in...' : 'Log In'}</Text>
             <Ionicons name="arrow-forward" size={16} color="#fff" />
           </Pressable>
           <Divider top={707} />
-          <Socials top={742} onPress={onLogin} />
+          <Socials top={742} onPress={() => Alert.alert('Not available yet', 'Google and Apple sign-in are not connected yet.')} />
         </Animated.View>
       </ScaledCanvas>
     </View>
@@ -121,6 +152,7 @@ const styles = StyleSheet.create({
   inputIcon: { position: 'absolute', left: 16 },
   inputText: { marginLeft: 55, marginRight: 46, height: 48, padding: 0, fontFamily: font.semi, fontSize: 12, color: '#444' },
   eye: { position: 'absolute', right: 15 },
+  error: { position: 'absolute', left: 31, top: 605, width: 341, height: 25, fontFamily: font.semi, fontSize: 9, lineHeight: 11, textAlign: 'center', textAlignVertical: 'center', color: '#fff' },
   forgot: { position: 'absolute', left: 252, top: 589, fontFamily: font.semi, fontSize: 13, color: '#fff' },
   primary: { position: 'absolute', left: 31, width: 341, height: 59, borderRadius: 15, backgroundColor: colors.darkPurple, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   primaryText: { fontFamily: font.bold, fontSize: 20, color: '#fff' },

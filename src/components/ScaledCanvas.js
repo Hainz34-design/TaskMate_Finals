@@ -2,13 +2,12 @@ import React from 'react';
 import { View, useWindowDimensions } from 'react-native';
 import { DESIGN_H, DESIGN_W } from '../theme';
 
-/**
- * The Figma frames are 402 x 874. Every screen is laid out in that coordinate
- * space and scaled to fit the device, so positions match the design 1:1.
- */
+// Panatilihin ang Figma coordinates habang ipinapaliit o pinalalaki sa device.
 export default function ScaledCanvas({ children }) {
   const { width, height } = useWindowDimensions();
+  // Width at height ratios ang sinusukat; piliin ang mas maliit para walang crop.
   const scale = Math.min(width / DESIGN_W, height / DESIGN_H);
+  // Ang natirang space sa bawat side ang ginagamit para i-center ang canvas.
   return (
     <View
       style={{

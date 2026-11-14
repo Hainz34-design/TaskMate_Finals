@@ -2,6 +2,7 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import { colors } from '../theme';
 
+// Shared background rings para consistent ang itsura ng tatlong illustrations.
 const Rings = () => (
   <>
     <View style={{ position: 'absolute', left: 76, top: 253, width: 250, height: 250, borderRadius: 125, backgroundColor: colors.ringOuter }} />
@@ -9,7 +10,7 @@ const Rings = () => (
   </>
 );
 
-/** Splash 5 - Organize Your Schedule */
+// Unang page: decorative mock task card na kumakatawan sa pag-aayos ng schedule.
 export const PageOne = () => (
   <>
     <Rings />
@@ -53,7 +54,7 @@ export const PageOne = () => (
   </>
 );
 
-/** Splash 6 - Track Deadlines Easily */
+// Ikalawang page: mock reminder cards para ipakita ang deadline tracking.
 export const PageTwo = () => (
   <>
     <Rings />
@@ -81,7 +82,7 @@ export const PageTwo = () => (
   </>
 );
 
-/** Splash 7/8 - Monitor Your Progress */
+// Huling page: decorative bar-chart cards para katawanin ang progress tracking.
 export const PageThree = () => (
   <>
     <Rings />
