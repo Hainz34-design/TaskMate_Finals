@@ -10,10 +10,8 @@ import { colors, font } from '../theme';
 const HIGH = { label: 'HIGH', color: '#ff6262', bg: 'rgba(255,98,98,0.22)', width: 45 };
 const MEDIUM = { label: 'MEDIUM', color: '#ffae00', bg: 'rgba(255,216,0,0.26)', width: 61 };
 
-// I-convert ang completion fraction sa SVG dash length para umikot ang ring.
 function Ring({ progress }) {
   const r = 40;
-  // Circumference ang kabuuang path; progress portion lang ang gagawing puti.
   const c = 2 * Math.PI * r;
   return (
     <Svg width={95} height={95} viewBox="0 0 95 95">
@@ -33,13 +31,10 @@ function Ring({ progress }) {
   );
 }
 
-// Home dashboard: summary cards, local task lists, at Add Task shortcut.
 export default function HomeScreen({ user }) {
   const navigation = useNavigation();
-  // Unang pangalan lang ang gamitin para magkasya ang greeting sa mobile header.
   const displayName = user?.fullName?.trim().split(/\s+/)[0] || 'User';
 
-  // Placeholder values muna; walang backend task loading sa screen na ito.
   const [todayTasks, setTodayTasks] = useState([]);
   const [upcomingTasks, setUpcomingTasks] = useState([]);
   const [done, setDone] = useState([]);
@@ -51,25 +46,20 @@ export default function HomeScreen({ user }) {
 
   const intro = useRef(new Animated.Value(0)).current;
 
-  // I-animate ang progress content mula maliit/transparent tungo sa normal.
   useEffect(() => {
     Animated.timing(intro, { toValue: 1, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
   }, []);
 
-  // Kung completed na, alisin sa done IDs; kung hindi, idagdag ito.
   const toggle = (id) => setDone((d) => (d.includes(id) ? d.filter((x) => x !== id) : [...d, id]));
   
-  // Iwasan ang division by zero kapag walang tasks sa dalawang listahan.
   const totalTasksCount = todayTasks.length + upcomingTasks.length;
   const progress = totalTasksCount > 0 ? done.length / totalTasksCount : 0;
-  // Parehong animation value ang gamit ng dashboard cards para sabay ang galaw.
   const pop = { opacity: intro, transform: [{ scale: intro.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }] };
 
   return (
     <View style={styles.root}>
       <ScaledCanvas>
         <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 130 }} showsVerticalScrollIndicator={false}>
-            {/* header */}
             <View style={styles.headerRow}>
               <View>
                 <Text style={styles.date}>Monday, Jun 1</Text>
@@ -86,7 +76,6 @@ export default function HomeScreen({ user }) {
               </View>
             </View>
 
-            {/* weekly progress */}
             <Animated.View style={[styles.cardWrap, pop]}>
               <LinearGradient colors={['#ac4dff', '#c98cfe']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.card}>
                 <Text style={[styles.cardLabel, { left: 136, top: 16, opacity: 0.8 }]}>Weekly Progress</Text>
@@ -106,7 +95,6 @@ export default function HomeScreen({ user }) {
               </LinearGradient>
             </Animated.View>
 
-            {/* stats */}
             <Animated.View style={[styles.stats, pop]}>
               {[
                 { value: focusScore.toString(), label: 'Focus Score', icon: 'flash-outline', tint: colors.purple },
@@ -121,7 +109,6 @@ export default function HomeScreen({ user }) {
               ))}
             </Animated.View>
 
-            {/* today's tasks */}
             <View style={styles.sectionRow}>
               <Text style={styles.sectionTitle}>Today’s Tasks</Text>
               <View style={styles.countPill}>
@@ -147,7 +134,6 @@ export default function HomeScreen({ user }) {
               ))
             )}
 
-            {/* upcoming */}
             <Text style={[styles.sectionTitle, { marginTop: 14 }]}>Upcoming</Text>
             {upcomingTasks.length === 0 ? (
               <Text style={styles.emptyText}>No upcoming tasks scheduled.</Text>
@@ -163,10 +149,9 @@ export default function HomeScreen({ user }) {
         </ScrollView>
       </ScaledCanvas>
 
-      {/* Floating button na nagbubukas ng nakatagong Add Task screen. */}
       <Pressable 
         style={styles.fab} 
-        onPress={() => navigation.navigate('AddTaskScreen')} // <-- 2. Matches name in TabNavigator
+        onPress={() => navigation.navigate('AddTaskScreen')}
       >
         <LinearGradient colors={['#ac4dff', '#c98cfe']} style={styles.fabGradient}>
           <Ionicons name="add" size={32} color="#fff" />

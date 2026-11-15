@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 // Tinutukoy ng schema na ito ang fields ng bawat document sa users collection.
-//eto yung mga makikitas a mongodb yung mga registered users sa app.
+//eto yung mga makikita sa mongodb yung mga registered users sa app.
 const userSchema = new mongoose.Schema(
   {
     // Pangalan na ipinapakita sa Profile; kailangan at nililinis ang extra spaces.

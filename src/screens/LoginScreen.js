@@ -5,11 +5,9 @@ import { Ionicons } from '@expo/vector-icons';
 import ScaledCanvas from '../components/ScaledCanvas';
 import { colors, font } from '../theme';
 
-const book = require('../../assets/book.svg');
+const book = require('../../assets/Vector book.png');
 
-// Shared input para sa auth forms; secure fields may eye button para makita/matago ang password.
 function Field({ top, label, labelTop, icon, placeholder, value, onChangeText, secure, keyboardType }) {
-  // Visibility state ay local sa field para hindi maapektuhan ang ibang inputs.
   const [visible, setVisible] = useState(false);
   return (
     <>
@@ -36,7 +34,6 @@ function Field({ top, label, labelTop, icon, placeholder, value, onChangeText, s
   );
 }
 
-// I-center ang "or continue with" label sa pagitan ng dalawang divider lines.
 const Divider = ({ top }) => (
   <>
     <View style={[styles.line, { left: 31, top: top + 9 }]} />
@@ -45,7 +42,6 @@ const Divider = ({ top }) => (
   </>
 );
 
-// Google/Apple UI pa lang ito; onPress ay nagpapaliwanag na hindi pa konektado ang OAuth.
 const Socials = ({ top, onPress }) => (
   <>
     <Pressable style={[styles.social, { left: 31, top }]} onPress={onPress}>
@@ -57,18 +53,13 @@ const Socials = ({ top, onPress }) => (
   </>
 );
 
-// Kinokolekta ang credentials at ipinapasa ang login attempt sa App/backend.
 export default function LoginScreen({ onLogin, onGoToSignup }) {
-  // Intro value ang nag-a-animate ng header at nagpapakita ng form pagkatapos.
   const [intro] = useState(() => new Animated.Value(0));
-  // Controlled input state para ang kasalukuyang values ang maipasa sa submit.
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  // Ginagamit para hindi maulit ang request at para magpakita ng server errors.
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Patakbuhin nang isang beses ang entrance animation kapag na-mount ang screen.
   useEffect(() => {
     Animated.timing(intro, { toValue: 1, duration: 700, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
   }, [intro]);
@@ -77,7 +68,6 @@ export default function LoginScreen({ onLogin, onGoToSignup }) {
   const logoY = intro.interpolate({ inputRange: [0, 1], outputRange: [-230, 0] });
   const formOpacity = intro.interpolate({ inputRange: [0.5, 1], outputRange: [0, 1], extrapolate: 'clamp' });
 
-  // I-block ang double submit habang pending; panatilihin ang error para makita ng user.
   const submitLogin = async () => {
     if (submitting) return;
 
@@ -95,7 +85,6 @@ export default function LoginScreen({ onLogin, onGoToSignup }) {
   return (
     <View style={styles.root}>
       <ScaledCanvas>
-        {/* Header shapes at logo na bumababa papunta sa final position. */}
         <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { transform: [{ translateY: shapeY }] }]}>
           <View style={styles.headerWhite} />
           <View style={styles.headerBite} />
@@ -108,7 +97,6 @@ export default function LoginScreen({ onLogin, onGoToSignup }) {
           </View>
         </Animated.View>
 
-        {/* Inputs/buttons fade in kapag sapat na ang header animation. */}
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: formOpacity }]}>
           <View style={styles.toggle} />
           <View style={styles.toggleActive} />

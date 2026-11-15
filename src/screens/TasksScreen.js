@@ -4,14 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 import ScaledCanvas from '../components/ScaledCanvas';
 import { colors, font } from '../theme';
 
-// Ipakita ang task list; search/status/priority filters ay pinagsasama sa UI.
 export default function TasksScreen({ tasks = [], onToggleTask, onDeleteTask }) {
-  // Query at filter selections ay UI-only; hindi binabago ang orihinal na task array.
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('ALL'); // 'ALL' | 'PENDING' | 'DONE'
-  const [activePriority, setActivePriority] = useState('ALL'); // 'ALL' | 'HIGH' | 'MEDIUM' | 'LOW'
+  const [activeTab, setActiveTab] = useState('ALL');
+  const [activePriority, setActivePriority] = useState('ALL');
 
-  // I-apply ang search, status, saka priority filters sa bawat task.
   const filteredTasks = tasks.filter((t) => {
     const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           (t.subject && t.subject.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -26,7 +23,6 @@ export default function TasksScreen({ tasks = [], onToggleTask, onDeleteTask }) 
     return true;
   });
 
-  // Bilangin ang buong list, hindi lang filtered results, para sa tab labels.
   const pendingCount = tasks.filter(t => !t.completed).length;
   const doneCount = tasks.filter(t => t.completed).length;
 
@@ -34,11 +30,9 @@ export default function TasksScreen({ tasks = [], onToggleTask, onDeleteTask }) 
     <View style={styles.root}>
       <ScaledCanvas>
         <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 130 }} showsVerticalScrollIndicator={false}>
-          {/* Title at totals mula sa buong task list. */}
           <Text style={styles.headerTitle}>My Tasks</Text>
           <Text style={styles.subtitle}>{pendingCount} pending . {doneCount} completed</Text>
 
-          {/* Search sa task title o subject habang nagta-type. */}
           <View style={styles.searchBox}>
             <Ionicons name="search-outline" size={20} color={colors.lightGrey} style={styles.searchIcon} />
             <TextInput
@@ -50,7 +44,6 @@ export default function TasksScreen({ tasks = [], onToggleTask, onDeleteTask }) 
             />
           </View>
 
-          {/* I-filter ang list ayon sa all/pending/completed status. */}
           <View style={styles.filterTabRow}>
             <Pressable 
               style={[styles.filterTab, activeTab === 'ALL' && styles.activeFilterTab]} 
@@ -80,7 +73,6 @@ export default function TasksScreen({ tasks = [], onToggleTask, onDeleteTask }) 
             </Pressable>
           </View>
 
-          {/* Dagdag na filter para sa task priority. */}
           <View style={styles.priorityFilterRow}>
             {['ALL', 'HIGH', 'MEDIUM', 'LOW'].map((p) => (
               <Pressable
@@ -107,7 +99,6 @@ export default function TasksScreen({ tasks = [], onToggleTask, onDeleteTask }) 
             ))}
           </View>
 
-          {/* Ipakita ang matching tasks; kung wala, magpakita ng empty state. */}
           {filteredTasks.length === 0 ? (
             <Text style={styles.emptyText}>No tasks found.</Text>
           ) : (

@@ -6,24 +6,19 @@ import { useNavigation } from '@react-navigation/native';
 import ScaledCanvas from '../components/ScaledCanvas';
 import { colors, font } from '../theme';
 
-// Kinokolekta ng screen na ito ang detalye bago idagdag ang isang task.
 export default function AddTaskScreen() {
-  // Parent navigator ang may kontrol para isara ang Add Task screen.
   const navigation = useNavigation();
 
-  // Bawat state value ay nakatali sa katumbas na TextInput sa form.
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [time, setTime] = useState('');
-  const [priority, setPriority] = useState('LOW'); // 'HIGH' | 'MEDIUM' | 'LOW'
+  const [priority, setPriority] = useState('LOW');
   const [subject, setSubject] = useState('');
 
-  // Demo pa lang ang save: log ang values at bumalik; wala pang database endpoint.
   const handleSaveTask = () => {
-    // TODO: Send task data to your backend or state management
     console.log({ title, description, dueDate, time, priority, subject });
-    navigation.goBack(); // Return to previous screen after saving
+    navigation.goBack();
   };
 
   return (
@@ -38,8 +33,6 @@ export default function AddTaskScreen() {
           </View>
 
           <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
-                {/* Page title at icon na nagpapakilala sa task form. */}
-            {/* Task Title */}
             <Text style={styles.label}>TASK TITLE *</Text>
             <TextInput
               style={styles.inputBox}
@@ -49,7 +42,6 @@ export default function AddTaskScreen() {
               onChangeText={setTitle}
             />
 
-            {/* Description */}
             <Text style={styles.label}>Description</Text>
             <TextInput
               style={[styles.inputBox, styles.textArea]}
@@ -60,7 +52,6 @@ export default function AddTaskScreen() {
               onChangeText={setDescription}
             />
 
-            {/* Due Date & Time row */}
             <View style={styles.row}>
               <View style={{ flex: 1, marginRight: 12 }}>
                 <Text style={styles.label}>DUE DATE</Text>
@@ -84,8 +75,6 @@ export default function AddTaskScreen() {
               </View>
             </View>
 
-            {/* Priority Selection */}
-            {/* I-update ang selected priority kapag pinindot ang isang option. */}
             <Text style={styles.label}>PRIORITY</Text>
             <View style={styles.priorityRow}>
               <Pressable
@@ -113,7 +102,6 @@ export default function AddTaskScreen() {
               </Pressable>
             </View>
 
-            {/* Subject */}
             <Text style={styles.label}>TYPE</Text>
             <TextInput
               style={styles.inputBox}
@@ -123,7 +111,6 @@ export default function AddTaskScreen() {
               onChangeText={setSubject}
             />
 
-            {/* Action Buttons */}
             <View style={styles.buttonRow}>
               <Pressable style={styles.cancelButton} onPress={() => navigation.goBack()}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>

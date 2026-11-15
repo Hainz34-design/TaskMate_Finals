@@ -11,22 +11,17 @@ import { colors, font } from '../theme';
 
 const Tab = createBottomTabNavigator();
 
-// Gumagawa ng tab navigation at nagbabahagi ng task/session callbacks sa screens.
 export default function TabNavigator({ onLogout, user }) {
-  // Tasks are temporarily in memory; hindi pa sila sini-save sa backend.
   const [tasks, setTasks] = useState([]);
 
-  // Gumawa ng bagong array at baligtarin lang ang completed flag ng target ID.
   const handleToggleTask = (id) => {
     setTasks(tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
   };
 
-  // Panatilihin ang ibang tasks at alisin ang may kaparehong ID.
   const handleDeleteTask = (id) => {
     setTasks(tasks.filter(t => t.id !== id));
   };
 
-  // Shared tab appearance; bawat route name ang tumutukoy sa icon nito.
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -37,7 +32,6 @@ export default function TabNavigator({ onLogout, user }) {
         tabBarStyle: styles.tabBar,
         tabBarItemStyle: styles.tabItem,
         tabBarIcon: ({ color, focused }) => {
-          // Return null kung hidden/unsupported ang route at walang tab icon.
           const iconName = {
             Home: 'home-outline',
             Tasks: 'checkbox-outline',
@@ -56,14 +50,12 @@ export default function TabNavigator({ onLogout, user }) {
       })}
     >
       <Tab.Screen name="Home">
-        {/* Ibigay ang signed-in user para maipakita ang pangalan sa greeting. */}
         {() => (
           <HomeScreen user={user} tasks={tasks} onToggleTask={handleToggleTask} />
         )}
       </Tab.Screen>
 
       <Tab.Screen name="Tasks">
-        {/* Ibigay ang task list at callbacks para ma-edit ang tasks. */}
         {() => (
           <TasksScreen 
             tasks={tasks} 
@@ -74,7 +66,6 @@ export default function TabNavigator({ onLogout, user }) {
       </Tab.Screen>
 
       <Tab.Screen name="Calendar">
-        {/* Ibigay ang parehong task data para sa calendar view. */}
         {() => (
           <CalendarScreen 
             tasks={tasks} 
@@ -85,11 +76,9 @@ export default function TabNavigator({ onLogout, user }) {
       </Tab.Screen>
 
       <Tab.Screen name="Profile">
-        {/* Ipakita ang account mula sa auth session at logout callback. */}
         {() => <ProfileScreen tasks={tasks} onLogout={onLogout} user={user} />}
       </Tab.Screen>
 
-      {/* Naa-access lang mula sa FAB; hindi ipinapakita bilang bottom tab. */}
       <Tab.Screen
         name="AddTaskScreen"
         component={AddTaskScreen}

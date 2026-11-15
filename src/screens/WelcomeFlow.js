@@ -4,10 +4,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import Svg, { Path } from 'react-native-svg';
 import ScaledCanvas from '../components/ScaledCanvas';
-import { colors, font } from '../theme';
+import { colors, DESIGN_W, font } from '../theme';
 import { PageOne, PageThree, PageTwo } from './OnBoardingIllustrations';
 
-const book = require('../../assets/book.svg');
+const book = require('../../assets/Vector book.png');
 
 const PAGES = [
   {
@@ -28,33 +28,26 @@ const PAGES = [
 ];
 const ILLUSTRATIONS = [PageOne, PageTwo, PageThree];
 
-// Gawing awaitable ang animation para matapos muna ang isang step bago ang susunod.
 const play = (a) => new Promise((resolve) => a.start(() => resolve()));
 
-/**
- * Splash 1-4: animated logo intro at transition papunta sa onboarding.
- * Splash 5-8: tatlong intro pages na may animated illustrations at text.
- * Splash 9-10: Get Started transition, pagkatapos ay ipasa ang flow sa login.
- */
+
 export default function WelcomeFlow({ onDone }) {
-  // Control ng kasalukuyang page, button availability, at kulay ng transition.
   const [index, setIndex] = useState(0);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [whiteBg, setWhiteBg] = useState(false);
   const [showPurple, setShowPurple] = useState(false);
 
-  // Animated values ang nagko-control ng logo, circles, page movement, at CTA.
-  // Initial values ay ratio ng design pixel laban sa kabuuang circle dimensions.
-  const circle = useRef(new Animated.Value(8 / 1066)).current; // starts as the 8px dot on the book
-  const bookScale = useRef(new Animated.Value(1.2)).current; // 187px -> 155px
-  const mate = useRef(new Animated.Value(0)).current; // white -> purple
-  const enter = useRef(new Animated.Value(0)).current; // 0 = splash, 1 = onboarding
-  const pos = useRef(new Animated.Value(0)).current; // current onboarding page
-  const pill = useRef(new Animated.Value(0)).current; // 0 = round button, 1 = "Get Started"
+
+  const circle = useRef(new Animated.Value(8 / 1066)).current; 
+  const bookScale = useRef(new Animated.Value(1.2)).current; 
+  const mate = useRef(new Animated.Value(0)).current; 
+  const enter = useRef(new Animated.Value(0)).current; 
+  const pos = useRef(new Animated.Value(0)).current; 
+  const pill = useRef(new Animated.Value(0)).current; 
   const purple = useRef(new Animated.Value(53 / 1885)).current;
 
-  // I-play ang intro sequence; alive guard para walang state update pagkatapos unmount.
+
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -77,35 +70,35 @@ export default function WelcomeFlow({ onDone }) {
     };
   }, []);
 
-  // I-update ang page index at i-animate ang page position/last-page CTA label.
+  
   const goTo = (i) => {
     setIndex(i);
     Animated.spring(pos, { toValue: i, bounciness: 0, speed: 14, useNativeDriver: false }).start();
     Animated.timing(pill, { toValue: i === 2 ? 1 : 0, duration: 300, useNativeDriver: false }).start();
   };
 
-  // Palitan ang CTA ng transition animation, pagkatapos ay hilingin sa App na magpatuloy.
+  
   const finish = async () => {
     setBusy(true);
-    await play(Animated.timing(pill, { toValue: 0, duration: 250, useNativeDriver: false })); // splash 9
+    await play(Animated.timing(pill, { toValue: 0, duration: 250, useNativeDriver: false })); 
     setShowPurple(true);
-    await play(Animated.timing(purple, { toValue: 1, duration: 650, easing: Easing.in(Easing.cubic), useNativeDriver: true })); // splash 10
+    await play(Animated.timing(purple, { toValue: 1, duration: 650, easing: Easing.in(Easing.cubic), useNativeDriver: true })); 
     onDone();
   };
 
-  // Huwag mag-navigate hangga't hindi tapos ang intro o may transition na tumatakbo.
+  
   const onNext = () => {
     if (!ready || busy) return;
     index < 2 ? goTo(index + 1) : finish();
   };
 
-  // Sa unang page, Skip ang finish action; sa kasunod, bumalik sa naunang page.
+  
   const onLeftLink = () => {
     if (!ready || busy) return;
     index === 0 ? finish() : goTo(index - 1);
   };
 
-  // Lumalapad lang ang CTA sa huling page at naka-align sa kanang gilid.
+  
   const buttonWidth = pill.interpolate({ inputRange: [0, 1], outputRange: [53, 142] });
   const buttonLeft = Animated.subtract(379, buttonWidth);
 
@@ -121,12 +114,10 @@ export default function WelcomeFlow({ onDone }) {
         />
       )}
       <ScaledCanvas>
-        {/* White circle ang transition mula purple splash papunta sa white onboarding. */}
         {!whiteBg && (
           <Animated.View style={[styles.whiteCircle, { transform: [{ scale: circle }] }]} />
         )}
 
-        {/* Illustrations slide pahalang; text ng active page lang ang visible. */}
         <Animated.View
           pointerEvents="none"
           style={[
@@ -139,7 +130,7 @@ export default function WelcomeFlow({ onDone }) {
               key={`art-${i}`}
               style={[
                 StyleSheet.absoluteFill,
-                { transform: [{ translateX: pos.interpolate({ inputRange: [i - 1, i, i + 1], outputRange: [330, 0, -330] }) }] },
+                { transform: [{ translateX: pos.interpolate({ inputRange: [i - 1, i, i + 1], outputRange: [DESIGN_W, 0, -DESIGN_W] }) }] },
               ]}
             >
               <Page />
@@ -159,7 +150,6 @@ export default function WelcomeFlow({ onDone }) {
           ))}
         </Animated.View>
 
-        {/* Nasa gitna muna ang logo, saka aangat para magbigay-space sa onboarding. */}
         <Animated.View
           style={[styles.logo, { transform: [{ translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [0, -350] }) }] }]}
         >
@@ -180,7 +170,6 @@ export default function WelcomeFlow({ onDone }) {
           <Image source={book} contentFit="contain" style={{ width: 155, height: 124 }} />
         </Animated.View>
 
-        {/* I-enable ang skip/back/next controls kapag ready na ang onboarding. */}
         <Animated.View
           pointerEvents={ready ? 'box-none' : 'none'}
           style={[StyleSheet.absoluteFill, { opacity: enter.interpolate({ inputRange: [0.6, 1], outputRange: [0, 1], extrapolate: 'clamp' }) }]}
@@ -218,7 +207,6 @@ export default function WelcomeFlow({ onDone }) {
           </Animated.View>
         </Animated.View>
 
-        {/* Purple circle ang panghuling transition bago buksan ng App ang login. */}
         {showPurple && <Animated.View pointerEvents="none" style={[styles.purpleCircle, { transform: [{ scale: purple }] }]} />}
       </ScaledCanvas>
     </View>
