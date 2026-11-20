@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import HomeScreen from '../screens/HomeScreen';
 import TasksScreen from '../screens/TasksScreen';
@@ -12,6 +13,7 @@ import { colors, font } from '../theme';
 const Tab = createBottomTabNavigator();
 
 export default function TabNavigator({ onLogout, user }) {
+  const insets = useSafeAreaInsets();
   const [tasks, setTasks] = useState([]);
 
   const handleToggleTask = (id) => {
@@ -29,7 +31,7 @@ export default function TabNavigator({ onLogout, user }) {
         tabBarActiveTintColor: colors.purple,
         tabBarInactiveTintColor: colors.tabGrey,
         tabBarLabelStyle: styles.tabLabel,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [styles.tabBar, { height: 64 + insets.bottom, paddingBottom: Math.max(insets.bottom, 6) }],
         tabBarItemStyle: styles.tabItem,
         tabBarIcon: ({ color, focused }) => {
           const iconName = {
@@ -97,9 +99,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 94,
-    paddingTop: 10,
-    paddingBottom: 8,
+    paddingTop: 8,
     paddingHorizontal: 0,
     backgroundColor: '#fff',
     borderTopWidth: 0.5,

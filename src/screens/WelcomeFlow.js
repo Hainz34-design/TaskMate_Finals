@@ -1,234 +1,197 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import React, { useEffect, useState } from 'react';
+import { Animated, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
-import Svg, { Path } from 'react-native-svg';
-import ScaledCanvas from '../components/ScaledCanvas';
-import { colors, DESIGN_W, font } from '../theme';
+import ResponsiveScreen from '../components/ResponsiveScreen';
+import BackgroundImage from '../components/BackgroundImage';
+import { colors, font } from '../theme';
 import { PageOne, PageThree, PageTwo } from './OnBoardingIllustrations';
 
-const book = require('../../assets/Vector book.png');
+const logo = require('../../assets/Vector book.png');
 
 const PAGES = [
   {
-    title: 'Organize Your Schedule',
-    body: 'Keep all your tasks, appointments, personal goals, and daily activities organized in one place. Plan your day, manage your time, and never miss an important task again.',
-    bodyTop: 595,
+    title: 'Organize your schedule',
+    body: 'Keep tasks, appointments, and goals in one place. Plan your day and make time for what matters.',
   },
   {
-    title: 'Track Deadlines Easily',
-    body: 'Get reminders for upcoming tasks and important events so you never miss a deadline.',
-    bodyTop: 610,
+    title: 'Track deadlines easily',
+    body: 'See what is coming up and stay on top of important deadlines.',
   },
   {
-    title: 'Monitor Your Progress',
-    body: 'Track completed tasks, monitor your productivity, and build better study habits every day.',
-    bodyTop: 600,
+    title: 'Monitor your progress',
+    body: 'Celebrate completed tasks and build better habits, one day at a time.',
   },
 ];
+
 const ILLUSTRATIONS = [PageOne, PageTwo, PageThree];
 
-const play = (a) => new Promise((resolve) => a.start(() => resolve()));
-
-
 export default function WelcomeFlow({ onDone }) {
+  const { width } = useWindowDimensions();
   const [index, setIndex] = useState(0);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [whiteBg, setWhiteBg] = useState(false);
   const [showPurple, setShowPurple] = useState(false);
-
-
-  const circle = useRef(new Animated.Value(8 / 1066)).current; 
-  const bookScale = useRef(new Animated.Value(1.2)).current; 
-  const mate = useRef(new Animated.Value(0)).current; 
-  const enter = useRef(new Animated.Value(0)).current; 
-  const pos = useRef(new Animated.Value(0)).current; 
-  const pill = useRef(new Animated.Value(0)).current; 
-  const purple = useRef(new Animated.Value(53 / 1885)).current;
-
+  const [enter] = useState(() => new Animated.Value(0));
+  const [pos] = useState(() => new Animated.Value(0));
+  const [transition] = useState(() => new Animated.Value(0));
+  const slideDistance = Math.min(width, 520);
 
   useEffect(() => {
-    let alive = true;
-    (async () => {
-      await play(Animated.delay(500));
-      await play(Animated.timing(bookScale, { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }));
-      await play(
-        Animated.parallel([
-          Animated.timing(circle, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
-          Animated.timing(mate, { toValue: 1, duration: 900, useNativeDriver: false }),
-        ]),
-      );
-      if (!alive) return;
-      setWhiteBg(true);
-      await play(Animated.delay(250));
-      await play(Animated.timing(enter, { toValue: 1, duration: 800, easing: Easing.out(Easing.cubic), useNativeDriver: true }));
-      if (alive) setReady(true);
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
+    const timer = setTimeout(() => {
+      Animated.timing(enter, { toValue: 1, duration: 500, useNativeDriver: true }).start(() => {
+        setReady(true);
+      });
+    }, 250);
 
-  
-  const goTo = (i) => {
-    setIndex(i);
-    Animated.spring(pos, { toValue: i, bounciness: 0, speed: 14, useNativeDriver: false }).start();
-    Animated.timing(pill, { toValue: i === 2 ? 1 : 0, duration: 300, useNativeDriver: false }).start();
+    return () => clearTimeout(timer);
+  }, [enter]);
+
+  const goTo = (nextIndex) => {
+    setIndex(nextIndex);
+    Animated.spring(pos, { toValue: nextIndex, bounciness: 0, speed: 14, useNativeDriver: true }).start();
   };
 
-  
-  const finish = async () => {
+  const finish = () => {
+    if (busy) return;
     setBusy(true);
-    await play(Animated.timing(pill, { toValue: 0, duration: 250, useNativeDriver: false })); 
     setShowPurple(true);
-    await play(Animated.timing(purple, { toValue: 1, duration: 650, easing: Easing.in(Easing.cubic), useNativeDriver: true })); 
-    onDone();
+    Animated.timing(transition, { toValue: 1, duration: 420, useNativeDriver: true }).start(({ finished }) => {
+      if (finished) onDone();
+    });
   };
 
-  
   const onNext = () => {
     if (!ready || busy) return;
-    index < 2 ? goTo(index + 1) : finish();
+    if (index < PAGES.length - 1) {
+      goTo(index + 1);
+    } else {
+      finish();
+    }
   };
 
-  
   const onLeftLink = () => {
     if (!ready || busy) return;
-    index === 0 ? finish() : goTo(index - 1);
+    if (index === 0) {
+      finish();
+    } else {
+      goTo(index - 1);
+    }
   };
 
-  
-  const buttonWidth = pill.interpolate({ inputRange: [0, 1], outputRange: [53, 142] });
-  const buttonLeft = Animated.subtract(379, buttonWidth);
-
   return (
-    <View style={[styles.root, whiteBg && { backgroundColor: '#fff' }]}>
-      {!whiteBg && (
-        <LinearGradient
-          colors={['#ac4dff', '#dddeff']}
-          locations={[0.044, 0.7558]}
-          start={{ x: 0.25, y: 0 }}
-          end={{ x: 0.75, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-      )}
-      <ScaledCanvas>
-        {!whiteBg && (
-          <Animated.View style={[styles.whiteCircle, { transform: [{ scale: circle }] }]} />
-        )}
-
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            StyleSheet.absoluteFill,
-            { opacity: enter, transform: [{ translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [310, 0] }) }] },
-          ]}
-        >
-          {ILLUSTRATIONS.map((Page, i) => (
-            <Animated.View
-              key={`art-${i}`}
-              style={[
-                StyleSheet.absoluteFill,
-                { transform: [{ translateX: pos.interpolate({ inputRange: [i - 1, i, i + 1], outputRange: [DESIGN_W, 0, -DESIGN_W] }) }] },
-              ]}
-            >
-              <Page />
-            </Animated.View>
-          ))}
-          {PAGES.map((p, i) => (
-            <Animated.View
-              key={`txt-${i}`}
-              style={[
-                StyleSheet.absoluteFill,
-                { opacity: pos.interpolate({ inputRange: [i - 0.5, i, i + 0.5], outputRange: [0, 1, 0], extrapolate: 'clamp' }) },
-              ]}
-            >
-              <Text style={styles.title}>{p.title}</Text>
-              <Text style={[styles.body, { top: p.bodyTop }]}>{p.body}</Text>
-            </Animated.View>
-          ))}
-        </Animated.View>
-
-        <Animated.View
-          style={[styles.logo, { transform: [{ translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [0, -350] }) }] }]}
-        >
-          <Text style={styles.logoTask}>Task</Text>
-          <Animated.Text
-            style={[styles.logoMate, { color: mate.interpolate({ inputRange: [0, 1], outputRange: ['#ffffff', colors.purpleText] }) }]}
-          >
-            Mate
-          </Animated.Text>
-        </Animated.View>
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            styles.book,
-            { transform: [{ translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [0, -440] }) }, { scale: bookScale }] },
-          ]}
-        >
-          <Image source={book} contentFit="contain" style={{ width: 155, height: 124 }} />
-        </Animated.View>
-
-        <Animated.View
-          pointerEvents={ready ? 'box-none' : 'none'}
-          style={[StyleSheet.absoluteFill, { opacity: enter.interpolate({ inputRange: [0.6, 1], outputRange: [0, 1], extrapolate: 'clamp' }) }]}
-        >
-          <Pressable onPress={onLeftLink} style={styles.leftLink} hitSlop={12}>
-            <Text style={styles.leftLinkText}>{index === 0 ? 'Skip' : 'back'}</Text>
-          </Pressable>
-
-          <View style={styles.dots}>
-            {PAGES.map((_, i) => (
-              <Animated.View
-                key={i}
-                style={[
-                  styles.dot,
-                  {
-                    width: pos.interpolate({ inputRange: [i - 1, i, i + 1], outputRange: [9, 29, 9], extrapolate: 'clamp' }),
-                    opacity: pos.interpolate({ inputRange: [i - 1, i, i + 1], outputRange: [0.4, 1, 0.4], extrapolate: 'clamp' }),
-                  },
-                ]}
-              />
-            ))}
+    <View style={styles.root}>
+      <BackgroundImage />
+      <ResponsiveScreen>
+        <View style={styles.page}>
+          <View style={styles.brandRow}>
+            <Image source={logo} contentFit="contain" style={styles.brandImage} />
+            <Text style={styles.wordmark}>
+              <Text style={styles.wordTask}>Task</Text>
+              <Text style={styles.wordMate}>Mate</Text>
+            </Text>
           </View>
 
-          <Animated.View style={[styles.button, { width: buttonWidth, left: buttonLeft }]}>
-            <Pressable onPress={onNext} style={StyleSheet.absoluteFill}>
-              <Animated.View style={[styles.arrow, { opacity: pill.interpolate({ inputRange: [0, 0.5], outputRange: [1, 0], extrapolate: 'clamp' }) }]}>
-                <Svg width={53} height={52} viewBox="0 0 53 52">
-                  <Path d="M16 26H34M27 17.5L35.5 26L27 34.5" stroke="#fff" strokeWidth={4.5} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                </Svg>
-              </Animated.View>
-              <Animated.View style={[styles.buttonLabelWrap, { opacity: pill.interpolate({ inputRange: [0.5, 1], outputRange: [0, 1], extrapolate: 'clamp' }) }]}>
-                <Text style={styles.buttonLabel} numberOfLines={1}>Get Started</Text>
-              </Animated.View>
-            </Pressable>
+          <Animated.View
+            style={[
+              styles.main,
+              {
+                opacity: enter,
+                transform: [{ translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }],
+              },
+            ]}
+          >
+            <View style={styles.slideStage}>
+              {ILLUSTRATIONS.map((Page, pageIndex) => (
+                <Animated.View
+                  key={`slide-${pageIndex}`}
+                  pointerEvents={pageIndex === index ? 'auto' : 'none'}
+                  style={[
+                    styles.slide,
+                    {
+                      opacity: pos.interpolate({
+                        inputRange: [pageIndex - 0.5, pageIndex, pageIndex + 0.5],
+                        outputRange: [0, 1, 0],
+                        extrapolate: 'clamp',
+                      }),
+                      transform: [
+                        {
+                          translateX: pos.interpolate({
+                            inputRange: [pageIndex - 1, pageIndex, pageIndex + 1],
+                            outputRange: [slideDistance, 0, -slideDistance],
+                          }),
+                        },
+                      ],
+                    },
+                  ]}
+                >
+                  <Page />
+                  <Text style={styles.title}>{PAGES[pageIndex].title}</Text>
+                  <Text style={styles.body}>{PAGES[pageIndex].body}</Text>
+                </Animated.View>
+              ))}
+            </View>
           </Animated.View>
-        </Animated.View>
 
-        {showPurple && <Animated.View pointerEvents="none" style={[styles.purpleCircle, { transform: [{ scale: purple }] }]} />}
-      </ScaledCanvas>
+          <View style={styles.footer}>
+            <Pressable onPress={onLeftLink} disabled={!ready || busy} hitSlop={10} style={styles.sideAction}>
+              <Text style={[styles.sideActionText, (!ready || busy) && styles.disabledText]}>
+                {index === 0 ? 'Skip' : 'Back'}
+              </Text>
+            </Pressable>
+
+            <View style={styles.dots} accessibilityLabel={`Page ${index + 1} of ${PAGES.length}`}>
+              {PAGES.map((page, pageIndex) => (
+                <View
+                  key={page.title}
+                  style={[styles.dot, pageIndex === index && styles.activeDot]}
+                />
+              ))}
+            </View>
+
+            <Pressable
+              onPress={onNext}
+              disabled={!ready || busy}
+              style={[styles.nextButton, (!ready || busy) && styles.disabledButton]}
+              accessibilityRole="button"
+            >
+              <Text style={styles.nextButtonText}>{index === PAGES.length - 1 ? 'Get started' : 'Next'}</Text>
+            </Pressable>
+          </View>
+        </View>
+      </ResponsiveScreen>
+
+      {showPurple && (
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.transition, { opacity: transition }]}
+        />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#ddddff' },
-  whiteCircle: { position: 'absolute', left: -328, top: -134, width: 1066, height: 1066, borderRadius: 533, backgroundColor: '#fff' },
-  purpleCircle: { position: 'absolute', left: -589, top: -117, width: 1885, height: 1885, borderRadius: 942.5, backgroundColor: colors.purple },
-  logo: { position: 'absolute', left: 112, top: 437, flexDirection: 'row' },
-  logoTask: { fontFamily: font.bold, fontSize: 36, lineHeight: 54, color: '#000' },
-  logoMate: { fontFamily: font.bold, fontSize: 36, lineHeight: 54 },
-  book: { position: 'absolute', left: 123, top: 313, width: 155, height: 124 },
-  title: { position: 'absolute', top: 559, left: 0, width: 402, textAlign: 'center', fontFamily: font.bold, fontSize: 24, color: '#000' },
-  body: { position: 'absolute', left: 67, width: 273, textAlign: 'center', fontFamily: font.bold, fontSize: 14, lineHeight: 21, color: colors.grey },
-  leftLink: { position: 'absolute', left: 19, top: 822, width: 60, alignItems: 'center' },
-  leftLinkText: { fontFamily: font.medium, fontSize: 14, color: colors.grey, textDecorationLine: 'underline' },
-  dots: { position: 'absolute', left: 182, top: 703, height: 9, flexDirection: 'row', gap: 2 },
-  dot: { height: 9, borderRadius: 5, backgroundColor: colors.purple },
-  button: { position: 'absolute', top: 800, height: 52, borderRadius: 26, backgroundColor: colors.purple, overflow: 'hidden' },
-  arrow: { position: 'absolute', right: 0, top: 0, width: 53, height: 52 },
-  buttonLabelWrap: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
-  buttonLabel: { fontFamily: font.bold, fontSize: 14, color: '#fff' },
+  root: { flex: 1, backgroundColor: '#f5f0ff' },
+  page: { flex: 1, width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 14 },
+  brandRow: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  brandImage: { width: 42, height: 42 },
+  wordmark: { fontFamily: font.bold, fontSize: 24 },
+  wordTask: { color: '#111' },
+  wordMate: { color: colors.purple },
+  main: { flex: 1, minHeight: 0, justifyContent: 'center' },
+  slideStage: { flex: 1, minHeight: 0, width: '100%', alignSelf: 'center', overflow: 'hidden' },
+  slide: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  title: { width: '100%', marginTop: 18, textAlign: 'center', fontFamily: font.bold, fontSize: 23, lineHeight: 30, color: '#17121e' },
+  body: { width: '100%', maxWidth: 360, marginTop: 8, textAlign: 'center', fontFamily: font.medium, fontSize: 14, lineHeight: 21, color: '#645c70' },
+  footer: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingTop: 12 },
+  sideAction: { minWidth: 52, minHeight: 44, alignItems: 'flex-start', justifyContent: 'center' },
+  sideActionText: { fontFamily: font.semi, fontSize: 14, color: colors.purple },
+  disabledText: { opacity: 0.5 },
+  dots: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(172,77,255,0.3)' },
+  activeDot: { width: 22, backgroundColor: colors.purple },
+  nextButton: { minWidth: 104, minHeight: 46, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, borderRadius: 23, backgroundColor: colors.purple },
+  nextButtonText: { fontFamily: font.semi, fontSize: 14, color: '#fff' },
+  disabledButton: { opacity: 0.6 },
+  transition: { ...StyleSheet.absoluteFillObject, backgroundColor: colors.purple },
 });

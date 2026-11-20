@@ -3,8 +3,9 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import ScaledCanvas from '../components/ScaledCanvas';
-import { colors, font } from '../theme';
+import ResponsiveScreen from '../components/ResponsiveScreen';
+import BackgroundImage from '../components/BackgroundImage';
+import { font } from '../theme';
 
 export default function AddTaskScreen() {
   const navigation = useNavigation();
@@ -24,7 +25,8 @@ export default function AddTaskScreen() {
   return (
     <View style={styles.root}>
       <LinearGradient colors={['#ac4dff', '#c98cfe']} style={styles.headerGradient}>
-        <ScaledCanvas>
+        <BackgroundImage />
+        <ResponsiveScreen>
           <View style={styles.headerRow}>
             <Text style={styles.headerTitle}>New Task</Text>
             <View style={styles.iconBox}>
@@ -32,7 +34,7 @@ export default function AddTaskScreen() {
             </View>
           </View>
 
-          <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
+          <ScrollView style={styles.scroll} contentContainerStyle={styles.formContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <Text style={styles.label}>TASK TITLE *</Text>
             <TextInput
               style={styles.inputBox}
@@ -120,7 +122,7 @@ export default function AddTaskScreen() {
               </Pressable>
             </View>
           </ScrollView>
-        </ScaledCanvas>
+        </ResponsiveScreen>
       </LinearGradient>
     </View>
   );
@@ -131,10 +133,11 @@ const shadow = { shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shad
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#ac4dff' },
   headerGradient: { flex: 1 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 40, marginHorizontal: 24, marginBottom: 20 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, marginHorizontal: 24, marginBottom: 12 },
   headerTitle: { fontFamily: font.bold, fontSize: 24, color: '#fff' },
   iconBox: { width: 44, height: 44, borderRadius: 14, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', ...shadow },
-  scroll: { marginHorizontal: 24 },
+  scroll: { flex: 1 },
+  formContent: { width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 24, paddingBottom: 32 },
   label: { fontFamily: font.bold, fontSize: 12, color: '#fff', marginBottom: 8, marginTop: 16, letterSpacing: 0.5 },
   inputBox: { backgroundColor: '#fff', borderRadius: 14, height: 52, paddingHorizontal: 16, fontFamily: font.medium, fontSize: 15, color: '#000', ...shadow },
   textArea: { height: 90, textAlignVertical: 'top', paddingTop: 14 },

@@ -1,64 +1,33 @@
 import React from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { colors } from '../theme';
 
-const page1Image = require('../../assets/page1.png');
-
-const Rings = () => (
-  <>
-    <View style={{ position: 'absolute', left: 76, top: 253, width: 250, height: 250, borderRadius: 125, backgroundColor: colors.ringOuter }} />
-    <View style={{ position: 'absolute', left: 111, top: 288, width: 180, height: 180, borderRadius: 90, backgroundColor: colors.ringInner }} />
-  </>
-);
+function PageIllustration({ source }) {
+  return (
+    <View style={styles.illustration}>
+      <View style={styles.outerRing}>
+        <View style={styles.innerRing} />
+      </View>
+      <Image source={source} contentFit="contain" style={StyleSheet.absoluteFillObject} />
+    </View>
+  );
+}
 
 export const PageOne = () => (
-  <>
-    <Rings />
-    <Image
-      source={page1Image}
-      contentFit="contain"
-      style={{
-        position: 'absolute',
-        left: 29,
-        top: 245,
-        width: 343,
-        height: 279,
-      }}
-    />
-  </>
+  <PageIllustration source={require('../../assets/page1.png')} />
 );
 
 export const PageTwo = () => (
-  <>
-    <Rings />
-    <Image
-      source={require('../../assets/page2.png')}
-      contentFit="contain"
-      style={{
-        position: 'absolute',
-        left: 29,
-        top: 245,
-        width: 343,
-        height: 279,
-      }}
-    />
-  </>
+  <PageIllustration source={require('../../assets/page2.png')} />
 );
 
 export const PageThree = () => (
-  <>
-    <Rings />
-    <Image
-      source={require('../../assets/page3.png')}
-      contentFit="contain"
-      style={{
-        position: 'absolute',
-        left: 29,
-        top: 245,
-        width: 343,
-        height: 279,
-      }}
-    />
-  </>
+  <PageIllustration source={require('../../assets/page3.png')} />
 );
+
+const styles = StyleSheet.create({
+  illustration: { width: '100%', maxWidth: 380, aspectRatio: 1.22, alignSelf: 'center', justifyContent: 'center' },
+  outerRing: { position: 'absolute', top: '8%', width: '72%', aspectRatio: 1, alignSelf: 'center', alignItems: 'center', justifyContent: 'center', borderRadius: 999, backgroundColor: colors.ringOuter },
+  innerRing: { width: '72%', aspectRatio: 1, borderRadius: 999, backgroundColor: colors.ringInner },
+});

@@ -1,18 +1,32 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Animated, Easing, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  Alert,
+  Animated,
+  Easing,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import ScaledCanvas from '../components/ScaledCanvas';
+import ResponsiveScreen from '../components/ResponsiveScreen';
+import BackgroundImage from '../components/BackgroundImage';
 import { colors, font } from '../theme';
 
 const book = require('../../assets/Vector book.png');
 
-function Field({ top, label, labelTop, icon, placeholder, value, onChangeText, secure, keyboardType }) {
+function Field({ label, icon, placeholder, value, onChangeText, secure, keyboardType }) {
   const [visible, setVisible] = useState(false);
+
   return (
-    <>
-      <Text style={[styles.label, { top: labelTop }]}>{label}</Text>
-      <View style={[styles.input, { top }]}>
+    <View style={styles.fieldGroup}>
+      <Text style={styles.label}>{label}</Text>
+      <View style={styles.input}>
         <Ionicons name={icon} size={18} color="#acacac" style={styles.inputIcon} />
         <TextInput
           value={value}
@@ -25,33 +39,16 @@ function Field({ top, label, labelTop, icon, placeholder, value, onChangeText, s
           style={styles.inputText}
         />
         {secure && (
-          <Pressable onPress={() => setVisible((v) => !v)} hitSlop={10} style={styles.eye}>
+          <Pressable onPress={() => setVisible((current) => !current)} hitSlop={10}>
             <Ionicons name={visible ? 'eye-off-outline' : 'eye-outline'} size={20} color="#acacac" />
           </Pressable>
         )}
       </View>
-    </>
+    </View>
   );
 }
 
-const Divider = ({ top }) => (
-  <>
-    <View style={[styles.line, { left: 31, top: top + 9 }]} />
-    <Text style={[styles.or, { top }]}>or continue with</Text>
-    <View style={[styles.line, { left: 262, top: top + 9 }]} />
-  </>
-);
 
-const Socials = ({ top, onPress }) => (
-  <>
-    <Pressable style={[styles.social, { left: 31, top }]} onPress={onPress}>
-      <Text style={styles.socialText}>Google</Text>
-    </Pressable>
-    <Pressable style={[styles.social, { left: 210, top }]} onPress={onPress}>
-      <Text style={styles.socialText}>Apple</Text>
-    </Pressable>
-  </>
-);
 
 export default function LoginScreen({ onLogin, onGoToSignup }) {
   const [intro] = useState(() => new Animated.Value(0));
@@ -63,10 +60,6 @@ export default function LoginScreen({ onLogin, onGoToSignup }) {
   useEffect(() => {
     Animated.timing(intro, { toValue: 1, duration: 700, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
   }, [intro]);
-
-  const shapeY = intro.interpolate({ inputRange: [0, 1], outputRange: [-263, 0] });
-  const logoY = intro.interpolate({ inputRange: [0, 1], outputRange: [-230, 0] });
-  const formOpacity = intro.interpolate({ inputRange: [0.5, 1], outputRange: [0, 1], extrapolate: 'clamp' });
 
   const submitLogin = async () => {
     if (submitting) return;
@@ -82,70 +75,115 @@ export default function LoginScreen({ onLogin, onGoToSignup }) {
     }
   };
 
+  const showSocialUnavailable = () => {
+    Alert.alert('Not available yet', 'Google and Apple sign-in are not connected yet.');
+  };
+
   return (
     <View style={styles.root}>
-      <ScaledCanvas>
-        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { transform: [{ translateY: shapeY }] }]}>
-          <View style={styles.headerWhite} />
-          <View style={styles.headerBite} />
-        </Animated.View>
-        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { transform: [{ translateY: logoY }] }]}>
-          <Image source={book} contentFit="contain" style={styles.book} />
-          <View style={styles.logo}>
-            <Text style={[styles.logoText, { color: '#000' }]}>Task</Text>
-            <Text style={[styles.logoText, { color: colors.purple }]}>Mate</Text>
-          </View>
-        </Animated.View>
+      <BackgroundImage />
+      <View pointerEvents="none" style={styles.purpleWash} />
+      <View pointerEvents="none" style={styles.headerWhite} />
+      <ResponsiveScreen>
+        <KeyboardAvoidingView style={styles.keyboardArea} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.content}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <Animated.View style={[styles.brandArea, { transform: [{ translateY: intro.interpolate({ inputRange: [0, 1], outputRange: [-18, 0] }) }] }]}>
+              <Image source={book} contentFit="contain" style={styles.book} />
+              <View style={styles.wordmark}>
+                <Text style={styles.logoText}>Task</Text>
+                <Text style={[styles.logoText, styles.logoMate]}>Mate</Text>
+              </View>
+            </Animated.View>
 
-        <Animated.View style={[StyleSheet.absoluteFill, { opacity: formOpacity }]}>
-          <View style={styles.toggle} />
-          <View style={styles.toggleActive} />
-          <View style={[styles.toggleHit, { left: 38 }]}>
-            <Text style={[styles.toggleText, { color: '#fff' }]}>Log In</Text>
-          </View>
-          <Pressable style={[styles.toggleHit, { left: 203 }]} onPress={onGoToSignup}>
-            <Text style={[styles.toggleText, { color: '#b9b9b9' }]}>Sign Up</Text>
-          </Pressable>
-          <Field label="EMAIL ADDRESS" labelTop={380} top={410} icon="mail-outline" placeholder="Example@gmail.com" value={email} onChangeText={(value) => { setEmail(value); setErrorMessage(''); }} keyboardType="email-address" />
-          <Field label="PASSWORD" labelTop={492} top={521} icon="lock-closed-outline" placeholder="•••••••" value={password} onChangeText={(value) => { setPassword(value); setErrorMessage(''); }} secure />
-          <Text style={styles.forgot}>Forgot Password?</Text>
-          {errorMessage ? (
-            <Text style={styles.error} accessibilityRole="alert">{errorMessage}</Text>
-          ) : null}
-          <Pressable style={[styles.primary, { top: 631 }]} onPress={submitLogin} disabled={submitting}>
-            <Text style={styles.primaryText}>{submitting ? 'Logging in...' : 'Log In'}</Text>
-            <Ionicons name="arrow-forward" size={16} color="#fff" />
-          </Pressable>
-          <Divider top={707} />
-          <Socials top={742} onPress={() => Alert.alert('Not available yet', 'Google and Apple sign-in are not connected yet.')} />
-        </Animated.View>
-      </ScaledCanvas>
+            <Animated.View style={[styles.form, { opacity: intro }]}>
+              <View style={styles.toggle}>
+                <View style={styles.toggleActive}>
+                  <Text style={styles.toggleActiveText}>Log In</Text>
+                </View>
+                <Pressable style={styles.toggleOption} onPress={onGoToSignup} accessibilityRole="button">
+                  <Text style={styles.toggleText}>Sign Up</Text>
+                </Pressable>
+              </View>
+
+              <Field
+                label="EMAIL ADDRESS"
+                icon="mail-outline"
+                placeholder="Example@gmail.com"
+                value={email}
+                onChangeText={(value) => {
+                  setEmail(value);
+                  setErrorMessage('');
+                }}
+                keyboardType="email-address"
+              />
+              <Field
+                label="PASSWORD"
+                icon="lock-closed-outline"
+                placeholder="•••••••"
+                value={password}
+                onChangeText={(value) => {
+                  setPassword(value);
+                  setErrorMessage('');
+                }}
+                secure
+              />
+
+              <Text style={styles.forgot}>Forgot Password?</Text>
+              {errorMessage ? <Text style={styles.error} accessibilityRole="alert">{errorMessage}</Text> : null}
+
+              <Pressable style={[styles.primary, submitting && styles.disabled]} onPress={submitLogin} disabled={submitting}>
+                <Text style={styles.primaryText}>{submitting ? 'Logging in...' : 'Log In'}</Text>
+                <Ionicons name="arrow-forward" size={16} color="#fff" />
+              </Pressable>
+
+              
+
+              
+            </Animated.View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </ResponsiveScreen>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.purple },
-  headerWhite: { position: 'absolute', left: -26, top: -58, width: 456, height: 329, backgroundColor: '#fff' },
-  headerBite: { position: 'absolute', left: 201 - 1020, top: 245, width: 2040, height: 2040, borderRadius: 1020, backgroundColor: colors.purple },
-  book: { position: 'absolute', left: 145, top: 79, width: 119, height: 96 },
-  logo: { position: 'absolute', left: 112, top: 177, flexDirection: 'row' },
-  logoText: { fontFamily: font.bold, fontSize: 36, lineHeight: 54 },
-  toggle: { position: 'absolute', left: 33, top: 289, width: 337, height: 52, borderRadius: 34, backgroundColor: '#fff' },
-  toggleActive: { position: 'absolute', left: 38, top: 294, width: 162, height: 42, borderRadius: 28, backgroundColor: 'rgba(161,91,222,0.59)' },
-  toggleHit: { position: 'absolute', top: 289, width: 162, height: 52, alignItems: 'center', justifyContent: 'center' },
-  toggleText: { fontFamily: font.semi, fontSize: 20 },
-  label: { position: 'absolute', left: 38, fontFamily: font.semi, fontSize: 16, color: '#fff' },
-  input: { position: 'absolute', left: 31, width: 338, height: 48, borderRadius: 16, backgroundColor: '#f5e9ff', justifyContent: 'center' },
-  inputIcon: { position: 'absolute', left: 16 },
-  inputText: { marginLeft: 55, marginRight: 46, height: 48, padding: 0, fontFamily: font.semi, fontSize: 12, color: '#444' },
-  eye: { position: 'absolute', right: 15 },
-  error: { position: 'absolute', left: 31, top: 605, width: 341, height: 25, fontFamily: font.semi, fontSize: 9, lineHeight: 11, textAlign: 'center', textAlignVertical: 'center', color: '#fff' },
-  forgot: { position: 'absolute', left: 252, top: 589, fontFamily: font.semi, fontSize: 13, color: '#fff' },
-  primary: { position: 'absolute', left: 31, width: 341, height: 59, borderRadius: 15, backgroundColor: colors.darkPurple, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  primaryText: { fontFamily: font.bold, fontSize: 20, color: '#fff' },
-  line: { position: 'absolute', width: 110, height: 1, backgroundColor: 'rgba(235,229,229,0.85)' },
-  or: { position: 'absolute', left: 152, fontFamily: font.semi, fontSize: 12, color: '#ebe5e5' },
-  social: { position: 'absolute', width: 162, height: 49, borderRadius: 16, backgroundColor: '#f8f7ff', borderWidth: 1, borderColor: '#754d98', alignItems: 'center', justifyContent: 'center' },
+  root: { flex: 1, overflow: 'hidden', backgroundColor: colors.purple },
+  purpleWash: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(172,77,255,0.92)' },
+  headerWhite: { position: 'absolute', top: -40, left: -30, right: -30, height: '38%', borderBottomLeftRadius: 220, borderBottomRightRadius: 220, backgroundColor: '#fff' },
+  keyboardArea: { flex: 1 },
+  scroll: { flex: 1 },
+  content: { flexGrow: 1, width: '100%', maxWidth: 464, alignSelf: 'center', justifyContent: 'center', paddingHorizontal: 30, paddingTop: 16, paddingBottom: 24 },
+  brandArea: { alignItems: 'center', marginBottom: 24 },
+  book: { width: 112, height: 96 },
+  wordmark: { flexDirection: 'row', marginTop: -4 },
+  logoText: { fontFamily: font.bold, fontSize: 36, lineHeight: 48, color: '#000' },
+  logoMate: { color: colors.purple },
+  form: { width: '100%' },
+  toggle: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 28, padding: 5, marginBottom: 24 },
+  toggleActive: { flex: 1, minHeight: 42, borderRadius: 24, backgroundColor: 'rgba(161,91,222,0.72)', alignItems: 'center', justifyContent: 'center' },
+  toggleOption: { flex: 1, minHeight: 42, alignItems: 'center', justifyContent: 'center' },
+  toggleActiveText: { fontFamily: font.semi, fontSize: 16, color: '#fff' },
+  toggleText: { fontFamily: font.semi, fontSize: 16, color: '#b9b9b9' },
+  fieldGroup: { marginBottom: 18 },
+  label: { fontFamily: font.semi, fontSize: 14, color: '#fff', marginBottom: 8 },
+  input: { minHeight: 50, flexDirection: 'row', alignItems: 'center', borderRadius: 14, backgroundColor: '#f5e9ff', paddingHorizontal: 14 },
+  inputIcon: { marginRight: 12 },
+  inputText: { flex: 1, minWidth: 0, minHeight: 48, paddingVertical: 0, fontFamily: font.semi, fontSize: 13, color: '#444' },
+  forgot: { alignSelf: 'flex-end', fontFamily: font.semi, fontSize: 13, color: '#fff', marginTop: -5, marginBottom: 14 },
+  error: { fontFamily: font.semi, fontSize: 12, lineHeight: 17, textAlign: 'center', color: '#fff', marginBottom: 10 },
+  primary: { minHeight: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 15, backgroundColor: colors.darkPurple },
+  primaryText: { fontFamily: font.bold, fontSize: 18, color: '#fff' },
+  disabled: { opacity: 0.65 },
+  divider: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 22 },
+  line: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(235,229,229,0.85)' },
+  dividerText: { fontFamily: font.semi, fontSize: 12, color: '#ebe5e5' },
+  socialRow: { flexDirection: 'row', gap: 16 },
+  social: { flex: 1, minHeight: 48, borderRadius: 15, backgroundColor: '#f8f7ff', borderWidth: 1, borderColor: '#754d98', alignItems: 'center', justifyContent: 'center' },
   socialText: { fontFamily: font.semi, fontSize: 16, color: '#000' },
 });

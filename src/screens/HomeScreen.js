@@ -1,31 +1,30 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import ScaledCanvas from '../components/ScaledCanvas';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ResponsiveScreen from '../components/ResponsiveScreen';
+import BackgroundImage from '../components/BackgroundImage';
 import { colors, font } from '../theme';
 
-const HIGH = { label: 'HIGH', color: '#ff6262', bg: 'rgba(255,98,98,0.22)', width: 45 };
-const MEDIUM = { label: 'MEDIUM', color: '#ffae00', bg: 'rgba(255,216,0,0.26)', width: 61 };
-
 function Ring({ progress }) {
-  const r = 40;
+  const r = 30;
   const c = 2 * Math.PI * r;
   return (
-    <Svg width={95} height={95} viewBox="0 0 95 95">
-      <Circle cx={47.5} cy={47.5} r={r} stroke="rgba(255,255,255,0.28)" strokeWidth={9} fill="none" />
+    <Svg width={72} height={72} viewBox="0 0 72 72">
+      <Circle cx={36} cy={36} r={r} stroke="rgba(255,255,255,0.28)" strokeWidth={8} fill="none" />
       <Circle
-        cx={47.5}
-        cy={47.5}
+        cx={36}
+        cy={36}
         r={r}
         stroke="#fff"
-        strokeWidth={9}
+        strokeWidth={8}
         strokeLinecap="round"
         fill="none"
         strokeDasharray={`${c * progress} ${c}`}
-        transform="rotate(-90 47.5 47.5)"
+        transform="rotate(-90 36 36)"
       />
     </Svg>
   );
@@ -33,22 +32,23 @@ function Ring({ progress }) {
 
 export default function HomeScreen({ user }) {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const displayName = user?.fullName?.trim().split(/\s+/)[0] || 'User';
 
-  const [todayTasks, setTodayTasks] = useState([]);
-  const [upcomingTasks, setUpcomingTasks] = useState([]);
+  const todayTasks = [];
+  const upcomingTasks = [];
   const [done, setDone] = useState([]);
 
-  const [streak, setStreak] = useState(0);
-  const [focusScore, setFocusScore] = useState(0);
-  const [studyHours, setStudyHours] = useState('0h');
-  const [subjectsCount, setSubjectsCount] = useState(0);
+  const streak = 0;
+  const focusScore = 0;
+  const studyHours = '0h';
+  const subjectsCount = 0;
 
-  const intro = useRef(new Animated.Value(0)).current;
+  const [intro] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     Animated.timing(intro, { toValue: 1, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
-  }, []);
+  }, [intro]);
 
   const toggle = (id) => setDone((d) => (d.includes(id) ? d.filter((x) => x !== id) : [...d, id]));
   
@@ -58,8 +58,9 @@ export default function HomeScreen({ user }) {
 
   return (
     <View style={styles.root}>
-      <ScaledCanvas>
-        <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 130 }} showsVerticalScrollIndicator={false}>
+      <BackgroundImage />
+      <ResponsiveScreen>
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
             <View style={styles.headerRow}>
               <View>
                 <Text style={styles.date}>Monday, Jun 1</Text>
@@ -78,20 +79,29 @@ export default function HomeScreen({ user }) {
 
             <Animated.View style={[styles.cardWrap, pop]}>
               <LinearGradient colors={['#ac4dff', '#c98cfe']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.card}>
-                <Text style={[styles.cardLabel, { left: 136, top: 16, opacity: 0.8 }]}>Weekly Progress</Text>
-                <View style={{ position: 'absolute', left: 20, top: 24 }}>
+                <View style={styles.progressContent}>
+                  <View style={styles.ringContainer}>
                   <Ring progress={progress} />
                   <View style={styles.ringCenter}>
                     <Text style={styles.ringText}>{Math.round(progress * 100)}%</Text>
                   </View>
+                  </View>
+                  <View style={styles.progressInfo}>
+                    <Text style={styles.cardLabel}>Weekly Progress</Text>
+                    <Text style={styles.cardBig}>{done.length} of {totalTasksCount}</Text>
+                    <Text style={styles.cardSmall}>tasks done · 🔥 {streak}-day streak</Text>
+                  </View>
+                  <View style={styles.progressStats}>
+                    <View>
+                      <Text style={styles.cardBig}>{todayTasks.length}</Text>
+                      <Text style={styles.cardTiny}>today</Text>
+                    </View>
+                    <View>
+                      <Text style={styles.cardBig}>{upcomingTasks.length}</Text>
+                      <Text style={styles.cardTiny}>upcoming</Text>
+                    </View>
+                  </View>
                 </View>
-                <Text style={[styles.cardBig, { left: 137, top: 40 }]}>{done.length} of {totalTasksCount}</Text>
-                <Text style={[styles.cardBig, { left: 137, top: 66 }]}>tasks done</Text>
-                <Text style={[styles.cardSmall, { left: 137, top: 100 }]}>🔥 {streak}-day streak</Text>
-                <Text style={[styles.cardBig, { left: 310, top: 28 }]}>{todayTasks.length}</Text>
-                <Text style={[styles.cardTiny, { left: 276, top: 52 }]}>today</Text>
-                <Text style={[styles.cardBig, { left: 310, top: 70 }]}>{upcomingTasks.length}</Text>
-                <Text style={[styles.cardTiny, { left: 258, top: 94 }]}>upcoming</Text>
               </LinearGradient>
             </Animated.View>
 
@@ -123,12 +133,14 @@ export default function HomeScreen({ user }) {
                   <Pressable onPress={() => toggle(t.id)} style={[styles.check, { borderColor: t.priority.color }, done.includes(t.id) && { backgroundColor: t.priority.color }]}>
                     {done.includes(t.id) && <Ionicons name="checkmark" size={18} color="#fff" />}
                   </Pressable>
-                  <Text style={[styles.taskTitle, done.includes(t.id) && styles.struck]}>{t.title}</Text>
-                  <View style={styles.metaRow}>
-                    <View style={[styles.badge, { backgroundColor: t.priority.bg, width: t.priority.width }]}>
-                      <Text style={[styles.badgeText, { color: t.priority.color }]}>{t.priority.label}</Text>
+                  <View style={styles.taskContent}>
+                    <Text style={[styles.taskTitle, done.includes(t.id) && styles.struck]}>{t.title}</Text>
+                    <View style={styles.metaRow}>
+                      <View style={[styles.badge, { backgroundColor: t.priority.bg, width: t.priority.width }]}>
+                        <Text style={[styles.badgeText, { color: t.priority.color }]}>{t.priority.label}</Text>
+                      </View>
+                      <Text style={styles.code}>{t.code}</Text>
                     </View>
-                    <Text style={styles.code}>{t.code}</Text>
                   </View>
                 </View>
               ))
@@ -141,16 +153,18 @@ export default function HomeScreen({ user }) {
               upcomingTasks.map((u) => (
                 <Pressable key={u.id} onPress={() => toggle(u.id)} style={styles.upCard}>
                   <View style={[styles.upDot, { backgroundColor: done.includes(u.id) ? '#c8c8c8' : u.dot }]} />
-                  <Text style={[styles.taskTitle, { left: 52, top: 9 }, done.includes(u.id) && styles.struck]}>{u.title}</Text>
-                  <Text style={[styles.code, { position: 'absolute', left: 52, top: 32 }]}>{u.code}</Text>
+                  <View style={styles.taskContent}>
+                    <Text style={[styles.taskTitle, done.includes(u.id) && styles.struck]}>{u.title}</Text>
+                    <Text style={styles.code}>{u.code}</Text>
+                  </View>
                 </Pressable>
               ))
             )}
         </ScrollView>
-      </ScaledCanvas>
+      </ResponsiveScreen>
 
       <Pressable 
-        style={styles.fab} 
+        style={[styles.fab, { bottom: 80 + insets.bottom }]}
         onPress={() => navigation.navigate('AddTaskScreen')}
       >
         <LinearGradient colors={['#ac4dff', '#c98cfe']} style={styles.fabGradient}>
@@ -165,45 +179,51 @@ const shadow = { shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 4, shad
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.screenBg },
-  scroll: { position: 'absolute', left: 30, top: 47, width: 342, height: 733 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', height: 106 },
-  date: { fontFamily: font.medium, fontSize: 16, color: colors.lightGrey, lineHeight: 24 },
+  scroll: { flex: 1 },
+  content: { width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 24, paddingBottom: 150 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
+  date: { fontFamily: font.medium, fontSize: 14, color: colors.lightGrey, lineHeight: 22 },
   greeting: { fontFamily: font.bold, fontSize: 24, lineHeight: 36, color: '#000' },
   headerIcons: { flexDirection: 'row', gap: 12 },
   bell: { width: 45, height: 44, borderRadius: 15, backgroundColor: 'rgba(229,199,255,0.75)', alignItems: 'center', justifyContent: 'center' },
   avatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontFamily: font.bold, fontSize: 20, color: '#fff' },
-  cardWrap: { height: 136, marginBottom: 19 },
-  card: { flex: 1, borderRadius: 22, ...shadow, shadowOpacity: 0.2 },
-  cardLabel: { position: 'absolute', fontFamily: font.semi, fontSize: 15, color: '#fff' },
-  cardBig: { position: 'absolute', fontFamily: font.bold, fontSize: 20, color: '#fff' },
-  cardSmall: { position: 'absolute', fontFamily: font.semi, fontSize: 14, color: '#fff', opacity: 0.8 },
-  cardTiny: { position: 'absolute', fontFamily: font.medium, fontSize: 10, color: '#fff', opacity: 0.75 },
-  ringCenter: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
-  ringText: { fontFamily: font.bold, fontSize: 24, color: '#fff' },
-  stats: { flexDirection: 'row', justifyContent: 'space-between', height: 92 },
-  tile: { width: 104, height: 92, borderRadius: 16, backgroundColor: '#fff', paddingHorizontal: 14, justifyContent: 'center', ...shadow, shadowOpacity: 0.12 },
+  cardWrap: { minHeight: 116, marginBottom: 19 },
+  card: { minHeight: 116, borderRadius: 22, padding: 14, justifyContent: 'center', ...shadow, shadowOpacity: 0.2 },
+  progressContent: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  ringContainer: { width: 72, height: 72, alignItems: 'center', justifyContent: 'center' },
+  progressInfo: { flex: 1, minWidth: 0 },
+  progressStats: { width: 54, gap: 8 },
+  cardLabel: { fontFamily: font.semi, fontSize: 13, color: '#fff', marginBottom: 3 },
+  cardBig: { fontFamily: font.bold, fontSize: 17, color: '#fff' },
+  cardSmall: { fontFamily: font.semi, fontSize: 11, color: '#fff', opacity: 0.86, marginTop: 3 },
+  cardTiny: { fontFamily: font.medium, fontSize: 10, color: '#fff', opacity: 0.8 },
+  ringCenter: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  ringText: { fontFamily: font.bold, fontSize: 18, color: '#fff' },
+  stats: { flexDirection: 'row', gap: 10, marginTop: 18 },
+  tile: { flex: 1, minWidth: 0, height: 92, borderRadius: 16, backgroundColor: '#fff', paddingHorizontal: 10, justifyContent: 'center', ...shadow, shadowOpacity: 0.12 },
   tileValue: { fontFamily: font.bold, fontSize: 19, color: '#000', lineHeight: 28 },
   tileLabel: { fontFamily: font.semi, fontSize: 12, color: colors.lightGrey, opacity: 0.75 },
-  sectionRow: { flexDirection: 'row', alignItems: 'center', marginTop: 32, marginBottom: 12 },
-  sectionTitle: { fontFamily: font.bold, fontSize: 23, color: '#000' },
+  sectionRow: { flexDirection: 'row', alignItems: 'center', marginTop: 26, marginBottom: 12 },
+  sectionTitle: { fontFamily: font.bold, fontSize: 21, color: '#000' },
   countPill: { marginLeft: 'auto', width: 27, height: 20, borderRadius: 19, backgroundColor: 'rgba(229,199,255,0.75)', alignItems: 'center', justifyContent: 'center' },
   countText: { fontFamily: font.semi, fontSize: 10, color: colors.purple },
-  taskCard: { height: 79, borderRadius: 12, backgroundColor: '#fff', marginBottom: 21, ...shadow },
-  check: { position: 'absolute', left: 12, top: 13, width: 30, height: 30, borderRadius: 15, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  taskTitle: { position: 'absolute', left: 52, top: 16, fontFamily: font.semi, fontSize: 15, color: '#000' },
+  taskCard: { minHeight: 79, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 12, backgroundColor: '#fff', marginBottom: 14, padding: 14, ...shadow },
+  check: { width: 30, height: 30, borderRadius: 15, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  taskContent: { flex: 1, minWidth: 0, gap: 6 },
+  taskTitle: { fontFamily: font.semi, fontSize: 14, color: '#000', flexShrink: 1 },
   struck: { textDecorationLine: 'line-through', opacity: 0.5 },
-  metaRow: { position: 'absolute', left: 52, top: 42, flexDirection: 'row', alignItems: 'center', gap: 7 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 7, flexWrap: 'wrap' },
   badge: { height: 20, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   badgeText: { fontFamily: font.bold, fontSize: 12 },
   code: { fontFamily: font.semi, fontSize: 12, color: colors.lightGrey, opacity: 0.8 },
-  upCard: { height: 61, borderRadius: 13, backgroundColor: '#fff', marginTop: 19, ...shadow },
-  upDot: { position: 'absolute', left: 20, top: 26, width: 9, height: 9, borderRadius: 5 },
+  upCard: { minHeight: 61, flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 13, backgroundColor: '#fff', marginTop: 12, paddingHorizontal: 18, paddingVertical: 10, ...shadow },
+  upDot: { width: 9, height: 9, borderRadius: 5 },
   emptyText: { fontFamily: font.medium, fontSize: 14, color: colors.lightGrey, marginBottom: 12, fontStyle: 'italic' },
   fab: {
     position: 'absolute',
-    right: 24,
-    bottom: 90,
+    right: 20,
+    bottom: 0,
     width: 60,
     height: 60,
     borderRadius: 30,

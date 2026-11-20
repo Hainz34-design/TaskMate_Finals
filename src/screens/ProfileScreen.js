@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import ScaledCanvas from '../components/ScaledCanvas';
+import ResponsiveScreen from '../components/ResponsiveScreen';
+import BackgroundImage from '../components/BackgroundImage';
 import { colors, font } from '../theme';
 
 function StatCard({ icon, value, label, tint, bubble }) {
@@ -72,7 +73,8 @@ export default function ProfileScreen({ tasks = [], onLogout, user }) {
 
   return (
     <View style={styles.root}>
-      <ScaledCanvas>
+      <BackgroundImage />
+      <ResponsiveScreen>
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
@@ -164,16 +166,16 @@ export default function ProfileScreen({ tasks = [], onLogout, user }) {
             </Pressable>
           </View>
         </ScrollView>
-      </ScaledCanvas>
+      </ResponsiveScreen>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.screenBg },
-  scroll: { position: 'absolute', left: 12, top: 35, width: 378, height: 740 },
-  scrollContent: { paddingBottom: 120 },
-  title: { fontFamily: font.bold, fontSize: 28, color: '#111', marginBottom: 15 },
+  scroll: { flex: 1 },
+  scrollContent: { width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 18, paddingTop: 20, paddingBottom: 130 },
+  title: { fontFamily: font.bold, fontSize: 26, color: '#111', marginBottom: 15 },
   heroWrap: {
     height: 266,
     borderRadius: 22,
@@ -217,10 +219,11 @@ const styles = StyleSheet.create({
   initial: { fontFamily: font.regular, fontSize: 58, color: '#fff', lineHeight: 70 },
   profileName: { marginTop: 5, fontFamily: font.bold, fontSize: 30, color: '#fff', textShadowColor: 'rgba(0,0,0,0.4)', textShadowRadius: 5 },
   email: { marginTop: 1, fontFamily: font.regular, fontSize: 12, color: '#fff', textShadowColor: 'rgba(0,0,0,0.55)', textShadowRadius: 4 },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 17 },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, marginTop: 17 },
   statCard: {
-    width: 86,
-    height: 136,
+    flex: 1,
+    minWidth: 0,
+    minHeight: 128,
     alignItems: 'center',
     paddingTop: 12,
     borderRadius: 18,
@@ -231,8 +234,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     elevation: 3,
   },
-  statIconSlot: { width: 50, height: 52, alignItems: 'center', justifyContent: 'center' },
-  statIcon: { width: 50, height: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 25 },
+  statIconSlot: { width: 44, height: 48, alignItems: 'center', justifyContent: 'center' },
+  statIcon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22 },
   statValue: { height: 25, marginTop: 4, fontFamily: font.bold, fontSize: 19, lineHeight: 24, color: '#111' },
   statLabel: { height: 30, marginTop: 1, fontFamily: font.regular, fontSize: 11, lineHeight: 15, textAlign: 'center', textAlignVertical: 'top', color: colors.grey },
   completionCard: {

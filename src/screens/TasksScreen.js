@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import ScaledCanvas from '../components/ScaledCanvas';
+import ResponsiveScreen from '../components/ResponsiveScreen';
+import BackgroundImage from '../components/BackgroundImage';
 import { colors, font } from '../theme';
 
 export default function TasksScreen({ tasks = [], onToggleTask, onDeleteTask }) {
@@ -28,8 +29,9 @@ export default function TasksScreen({ tasks = [], onToggleTask, onDeleteTask }) 
 
   return (
     <View style={styles.root}>
-      <ScaledCanvas>
-        <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 130 }} showsVerticalScrollIndicator={false}>
+      <BackgroundImage />
+      <ResponsiveScreen>
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Text style={styles.headerTitle}>My Tasks</Text>
           <Text style={styles.subtitle}>{pendingCount} pending . {doneCount} completed</Text>
 
@@ -106,35 +108,31 @@ export default function TasksScreen({ tasks = [], onToggleTask, onDeleteTask }) 
               <View key={t.id} style={styles.taskCard}>
                 <Pressable 
                   onPress={() => onToggleTask(t.id)} 
-                  style={[
-                    styles.check, 
-                    { borderColor: t.priority?.color || colors.purple }, 
-                    t.completed && { backgroundColor: t.priority?.color || colors.purple }
-                  ]}
+                  style={[styles.check, { borderColor: t.priority?.color || colors.purple }, t.completed && { backgroundColor: t.priority?.color || colors.purple }]}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: Boolean(t.completed) }}
                 >
                   {t.completed && <Ionicons name="checkmark" size={18} color="#fff" />}
                 </Pressable>
 
-                <Text style={[styles.taskTitle, t.completed && styles.struck]}>
-                  {t.title}
-                </Text>
-                
-                {t.description ? (
-                  <Text style={styles.taskDesc} numberOfLines={1}>{t.description}</Text>
-                ) : null}
-
-                <View style={styles.metaRow}>
-                  {t.priority && (
-                    <View style={[styles.badge, { backgroundColor: t.priority.bg }]}>
-                      <Text style={[styles.badgeText, { color: t.priority.color }]}>{t.priority.label}</Text>
-                    </View>
-                  )}
-                  {t.subject ? (
-                    <View style={styles.subjectBadge}>
-                      <Text style={styles.subjectText}>{t.subject}</Text>
-                    </View>
+                <View style={styles.taskContent}>
+                  <Text style={[styles.taskTitle, t.completed && styles.struck]}>{t.title}</Text>
+                  {t.description ? (
+                    <Text style={styles.taskDesc} numberOfLines={2}>{t.description}</Text>
                   ) : null}
-                  <Text style={styles.code}>{t.dueDate ? `Due ${t.dueDate} - ${t.time || ''}` : ''}</Text>
+                  <View style={styles.metaRow}>
+                    {t.priority && (
+                      <View style={[styles.badge, { backgroundColor: t.priority.bg }]}>
+                        <Text style={[styles.badgeText, { color: t.priority.color }]}>{t.priority.label}</Text>
+                      </View>
+                    )}
+                    {t.subject ? (
+                      <View style={styles.subjectBadge}>
+                        <Text style={styles.subjectText}>{t.subject}</Text>
+                      </View>
+                    ) : null}
+                    {t.dueDate ? <Text style={styles.code}>Due {t.dueDate}{t.time ? ` · ${t.time}` : ''}</Text> : null}
+                  </View>
                 </View>
 
                 <Pressable onPress={() => onDeleteTask(t.id)} style={styles.deleteBtn}>
@@ -144,7 +142,7 @@ export default function TasksScreen({ tasks = [], onToggleTask, onDeleteTask }) 
             ))
           )}
         </ScrollView>
-      </ScaledCanvas>
+      </ResponsiveScreen>
     </View>
   );
 }
@@ -153,8 +151,9 @@ const shadow = { shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 4, shad
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.screenBg },
-  scroll: { position: 'absolute', left: 24, top: 40, width: 350, height: 740 },
-  headerTitle: { fontFamily: font.bold, fontSize: 32, color: '#000' },
+  scroll: { flex: 1 },
+  content: { width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 24, paddingBottom: 130 },
+  headerTitle: { fontFamily: font.bold, fontSize: 30, color: '#000' },
   subtitle: { fontFamily: font.medium, fontSize: 14, color: colors.lightGrey, marginTop: 4, marginBottom: 20 },
   searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, height: 50, paddingHorizontal: 16, marginBottom: 16, ...shadow },
   searchIcon: { marginRight: 10 },
@@ -164,22 +163,23 @@ const styles = StyleSheet.create({
   activeFilterTab: { backgroundColor: colors.purple },
   filterTabText: { fontFamily: font.semi, fontSize: 13, color: colors.lightGrey },
   activeFilterTabText: { color: '#fff' },
-  priorityFilterRow: { flexDirection: 'row', gap: 8, marginBottom: 24 },
+  priorityFilterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 24 },
   priorityPill: { paddingHorizontal: 12, height: 32, borderRadius: 16, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#eee' },
   activePriorityPill: { borderColor: colors.purple, backgroundColor: 'rgba(172,77,255,0.1)' },
   priorityPillText: { fontFamily: font.semi, fontSize: 12, color: colors.lightGrey },
   activePriorityPillText: { fontFamily: font.bold, color: colors.purple },
-  taskCard: { minHeight: 90, borderRadius: 16, backgroundColor: '#fff', marginBottom: 16, padding: 16, paddingLeft: 56, paddingRight: 40, ...shadow },
-  check: { position: 'absolute', left: 16, top: 16, width: 28, height: 28, borderRadius: 14, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  taskTitle: { fontFamily: font.semi, fontSize: 15, color: '#000' },
-  taskDesc: { fontFamily: font.medium, fontSize: 13, color: colors.lightGrey, marginTop: 2 },
+  taskCard: { minHeight: 90, flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: 16, backgroundColor: '#fff', marginBottom: 16, padding: 14, ...shadow },
+  check: { marginTop: 2, width: 28, height: 28, borderRadius: 14, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  taskContent: { flex: 1, minWidth: 0 },
+  taskTitle: { fontFamily: font.semi, fontSize: 15, color: '#000', flexShrink: 1 },
+  taskDesc: { fontFamily: font.medium, fontSize: 13, color: colors.lightGrey, marginTop: 3 },
   struck: { textDecorationLine: 'line-through', opacity: 0.5 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' },
   badge: { paddingHorizontal: 8, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   badgeText: { fontFamily: font.bold, fontSize: 10 },
   subjectBadge: { backgroundColor: 'rgba(172,77,255,0.12)', paddingHorizontal: 8, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   subjectText: { fontFamily: font.bold, fontSize: 10, color: colors.purple },
-  code: { fontFamily: font.medium, fontSize: 11, color: colors.lightGrey },
-  deleteBtn: { position: 'absolute', right: 16, top: 16 },
+  code: { fontFamily: font.medium, fontSize: 11, color: colors.lightGrey, flexShrink: 1 },
+  deleteBtn: { padding: 4 },
   emptyText: { fontFamily: font.medium, fontSize: 14, color: colors.lightGrey, textAlign: 'center', marginTop: 32, fontStyle: 'italic' },
 });

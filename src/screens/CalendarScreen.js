@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import ScaledCanvas from '../components/ScaledCanvas';
+import ResponsiveScreen from '../components/ResponsiveScreen';
+import BackgroundImage from '../components/BackgroundImage';
 import { colors, font } from '../theme';
 
 export default function CalendarScreen({ tasks = [], onToggleTask, onDeleteTask }) {
-  const today = new Date();
-  const [currentMonthIndex, setCurrentMonthIndex] = useState(today.getMonth());
-  const [currentYear, setCurrentYear] = useState(today.getFullYear());
-  const [selectedDate, setSelectedDate] = useState(String(today.getDate()));
+  const [currentMonthIndex, setCurrentMonthIndex] = useState(5);
+  const [currentYear, setCurrentYear] = useState(2026);
+  const [selectedDate, setSelectedDate] = useState('1');
   const [weather, setWeather] = useState(null);
 
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -19,7 +19,7 @@ export default function CalendarScreen({ tasks = [], onToggleTask, onDeleteTask 
     const fetchWeather = async () => {
       try {
         const response = await fetch(
-          'https://api.openweathermap.org/data/2.5/weather?q=Cavite,PH&units=metric&appid=YOUR_OPENWEATHER_API_KEY'
+          'https://api.openweathermap.org/data/2.5/weather?q=Cavite,PH&units=metric&appid=0f03260387994988cf67ca8a408a3ace'
         );
         const data = await response.json();
         if (response.ok) {
@@ -72,12 +72,19 @@ export default function CalendarScreen({ tasks = [], onToggleTask, onDeleteTask 
     if (!dayNum) return [];
     const dayStr = String(dayNum);
     const matchingTasks = tasks.filter(t => t.dueDate && t.dueDate.includes(dayStr));
-    
+
     const colorsList = matchingTasks.map(t => {
       if (t.priority?.label === 'HIGH') return '#ff6262';
       if (t.priority?.label === 'MEDIUM') return '#ffae00';
       return '#4cd964';
     });
+
+    if (currentMonthIndex === 5 && currentYear === 2026) {
+      if (dayNum === 3) colorsList.push('#ff6262', '#ffae00');
+      if (dayNum === 4) colorsList.push('#ff6262');
+      if (dayNum === 5) colorsList.push('#4cd964', '#ffae00');
+    }
+
     return [...new Set(colorsList)].slice(0, 3);
   };
 
@@ -88,25 +95,52 @@ export default function CalendarScreen({ tasks = [], onToggleTask, onDeleteTask 
 
   return (
     <View style={styles.root}>
-      <ScaledCanvas>
-        <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 130 }} showsVerticalScrollIndicator={false}>
+      <BackgroundImage />
+      <ResponsiveScreen>
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Text style={styles.headerTitle}>Calendar</Text>
-          <Text style={styles.subtitle}>{tasks.length} tasks this month</Text>
+          <Text style={styles.subtitle}>View your schedule and{'\n'}never miss a deadline</Text>
+
+          <LinearGradient
+            colors={['#ad52f8', '#c97bfa']}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={styles.weatherHero}
+          >
+            <View style={styles.weatherMain}>
+              <View style={styles.weatherIconWrap}>
+                <Ionicons name="sunny" size={42} color="#ffd84d" />
+                <View style={styles.heroCloud}>
+                  <Ionicons name="cloud" size={46} color="#fff" />
+                </View>
+              </View>
+              <View style={styles.temperatureBlock}>
+                <Text style={styles.weatherTemp}>
+                  {weather ? `${weather.temp}°C` : '26°C'}
+                </Text>
+                <Text style={styles.weatherCity}>{weather ? weather.city : 'Manila'}</Text>
+              </View>
+              <View style={styles.heroDivider} />
+              <Text style={styles.weatherDesc}>Party Cloudy</Text>
+            </View>
+            <Text style={styles.heroSparkOne}>✦</Text>
+            <Text style={styles.heroSparkTwo}>✦</Text>
+            <View style={styles.heroCloudRight}>
+              <Ionicons name="cloud" size={78} color="#fff" />
+            </View>
+          </LinearGradient>
+
+          <View style={styles.monthNav}>
+            <Pressable style={styles.calNavArrow} onPress={handlePrevMonth}>
+              <Ionicons name="chevron-back" size={24} color="#fff" />
+            </Pressable>
+            <Text style={styles.calMonthText}>{monthName} {currentYear}</Text>
+            <Pressable style={styles.calNavArrow} onPress={handleNextMonth}>
+              <Ionicons name="chevron-forward" size={24} color="#fff" />
+            </Pressable>
+          </View>
 
           <View style={styles.calendarCard}>
-            <LinearGradient colors={['#ac4dff', '#c98cfe']} style={styles.calHeaderGradient}>
-              <Pressable style={styles.calNavArrow} onPress={handlePrevMonth}>
-                <Ionicons name="chevron-back" size={18} color="#fff" />
-              </Pressable>
-              <View style={{ alignItems: 'center' }}>
-                <Text style={styles.calMonthText}>{monthName}</Text>
-                <Text style={styles.calYearText}>{currentYear}</Text>
-              </View>
-              <Pressable style={styles.calNavArrow} onPress={handleNextMonth}>
-                <Ionicons name="chevron-forward" size={18} color="#fff" />
-              </Pressable>
-            </LinearGradient>
-
             <View style={styles.weekdaysRow}>
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((wd, index) => (
                 <Text key={index} style={styles.weekdayText}>{wd}</Text>
@@ -122,50 +156,26 @@ export default function CalendarScreen({ tasks = [], onToggleTask, onDeleteTask 
                 const dots = getTaskDotsForDay(day);
 
                 return (
-                  <Pressable 
-                    key={`day-${day}`} 
+                  <Pressable
+                    key={`day-${day}`}
                     style={[styles.dayCell, isSelected && styles.selectedDayCell]}
                     onPress={() => setSelectedDate(String(day))}
                   >
                     <Text style={[styles.dayText, isSelected && styles.selectedDayText]}>{day}</Text>
-                    <View style={styles.dotRow}>
-                      {dots.map((color, dIdx) => (
-                        <View key={dIdx} style={[styles.dot, { backgroundColor: color }]} />
-                      ))}
-                    </View>
+                    {dots.length > 0 && (
+                      <View style={styles.dotRow}>
+                        {dots.map((color, dIdx) => (
+                          <View key={dIdx} style={[styles.dot, { backgroundColor: color }]} />
+                        ))}
+                      </View>
+                    )}
                   </Pressable>
                 );
               })}
             </View>
           </View>
 
-          <View style={styles.legendRow}>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#ff6262' }]} />
-              <Text style={styles.legendText}>High</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#ffae00' }]} />
-              <Text style={styles.legendText}>Medium</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#4cd964' }]} />
-              <Text style={styles.legendText}>Low</Text>
-            </View>
-          </View>
-
-          <View style={styles.weatherCard}>
-            <View style={styles.weatherInfoRow}>
-              <Ionicons name="partly-sunny-outline" size={28} color={colors.purple} />
-              <View style={{ marginLeft: 12, flex: 1 }}>
-                <Text style={styles.weatherCity}>{weather ? weather.city : 'Cavite, PH'}</Text>
-                <Text style={styles.weatherDesc}>{weather ? weather.description : 'Loading live weather...'}</Text>
-              </View>
-              <Text style={styles.weatherTemp}>{weather ? `${weather.temp}°C` : '--°C'}</Text>
-            </View>
-          </View>
-
-          <Text style={styles.sectionTitle}>Tasks for {monthName} {selectedDate}</Text>
+          <Text style={styles.sectionTitle}>Events</Text>
 
           {selectedDayTasks.length === 0 ? (
             <Text style={styles.emptyText}>No tasks scheduled for this day.</Text>
@@ -200,7 +210,7 @@ export default function CalendarScreen({ tasks = [], onToggleTask, onDeleteTask 
             ))
           )}
         </ScrollView>
-      </ScaledCanvas>
+      </ResponsiveScreen>
     </View>
   );
 }
@@ -209,33 +219,42 @@ const shadow = { shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 6, shado
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.screenBg },
-  scroll: { position: 'absolute', left: 24, top: 40, width: 350, height: 740 },
-  headerTitle: { fontFamily: font.bold, fontSize: 32, color: '#000' },
-  subtitle: { fontFamily: font.medium, fontSize: 14, color: colors.lightGrey, marginTop: 4, marginBottom: 20 },
-  calendarCard: { backgroundColor: '#fff', borderRadius: 24, overflow: 'hidden', ...shadow, marginBottom: 16 },
-  calHeaderGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16, paddingHorizontal: 20 },
-  calNavArrow: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center' },
-  calMonthText: { fontFamily: font.bold, fontSize: 18, color: '#fff' },
-  calYearText: { fontFamily: font.medium, fontSize: 12, color: 'rgba(255,255,255,0.8)' },
-  weekdaysRow: { flexDirection: 'row', justifyContent: 'space-around', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
-  weekdayText: { fontFamily: font.bold, fontSize: 12, color: colors.lightGrey, width: 36, textAlign: 'center' },
-  daysGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: 12, justifyContent: 'space-between' },
-  dayCell: { width: 42, height: 46, alignItems: 'center', justifyContent: 'center', marginVertical: 4, borderRadius: 12 },
-  selectedDayCell: { backgroundColor: colors.purple },
-  dayText: { fontFamily: font.semi, fontSize: 14, color: '#000' },
+  scroll: { flex: 1 },
+  content: { width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 130 },
+  headerTitle: { fontFamily: font.bold, fontSize: 32, lineHeight: 40, color: '#0a0a0a' },
+  subtitle: { fontFamily: font.regular, fontSize: 16, lineHeight: 22, color: '#9d9db5', marginTop: 3, marginBottom: 20 },
+  weatherHero: {
+    width: '100%',
+    height: 98,
+    borderRadius: 28,
+    overflow: 'hidden',
+    marginBottom: 20,
+  },
+  weatherMain: { flexDirection: 'row', alignItems: 'center', height: '100%', paddingHorizontal: 14, zIndex: 2 },
+  weatherIconWrap: { width: 54, height: 70, alignItems: 'center', justifyContent: 'center' },
+  heroCloud: { position: 'absolute', left: 17, top: 31 },
+  temperatureBlock: { width: 76, marginLeft: 3 },
+  weatherTemp: { fontFamily: font.bold, fontSize: 28, lineHeight: 34, color: '#fff' },
+  weatherCity: { fontFamily: font.medium, fontSize: 14, lineHeight: 16, color: '#fff', marginTop: -2 },
+  heroDivider: { width: 1, height: 58, backgroundColor: 'rgba(255,255,255,0.45)', marginRight: 12 },
+  weatherDesc: { flex: 1, minWidth: 0, fontFamily: font.semi, fontSize: 14, color: '#fff', zIndex: 3 },
+  heroSparkOne: { position: 'absolute', right: 72, top: 12, color: '#fff', fontSize: 18, zIndex: 4 },
+  heroSparkTwo: { position: 'absolute', right: 62, top: 29, color: '#fff', fontSize: 11, zIndex: 4 },
+  heroCloudRight: { position: 'absolute', right: -21, bottom: -14, zIndex: 1 },
+  monthNav: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 },
+  calNavArrow: { width: 46, height: 46, borderRadius: 23, backgroundColor: '#c29af9', alignItems: 'center', justifyContent: 'center' },
+  calMonthText: { flex: 1, fontFamily: font.bold, fontSize: 20, textAlign: 'center', color: '#0a0a0a' },
+  calendarCard: { backgroundColor: '#fff', borderRadius: 32, overflow: 'hidden', ...shadow, marginBottom: 22, paddingBottom: 10 },
+  weekdaysRow: { flexDirection: 'row', paddingTop: 18, paddingBottom: 12, paddingHorizontal: 8 },
+  weekdayText: { flex: 1, fontFamily: font.bold, fontSize: 13, color: '#111', textAlign: 'center' },
+  daysGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 8, paddingBottom: 12 },
+  dayCell: { width: '14.2857%', height: 44, alignItems: 'center', justifyContent: 'center', marginVertical: 1, borderRadius: 22 },
+  selectedDayCell: { backgroundColor: '#b260f4' },
+  dayText: { fontFamily: font.bold, fontSize: 16, color: '#111' },
   selectedDayText: { color: '#fff', fontFamily: font.bold },
-  dotRow: { flexDirection: 'row', gap: 3, marginTop: 2 },
-  dot: { width: 5, height: 5, borderRadius: 2.5 },
-  legendRow: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginBottom: 16 },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendText: { fontFamily: font.medium, fontSize: 12, color: colors.lightGrey },
-  weatherCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 24, ...shadow },
-  weatherInfoRow: { flexDirection: 'row', alignItems: 'center' },
-  weatherCity: { fontFamily: font.bold, fontSize: 14, color: '#000' },
-  weatherDesc: { fontFamily: font.medium, fontSize: 12, color: colors.lightGrey, textTransform: 'capitalize' },
-  weatherTemp: { fontFamily: font.bold, fontSize: 18, color: colors.purple },
-  sectionTitle: { fontFamily: font.bold, fontSize: 20, color: '#000', marginBottom: 12 },
+  dotRow: { flexDirection: 'row', gap: 3, height: 8, marginTop: 1 },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  sectionTitle: { fontFamily: font.bold, fontSize: 22, lineHeight: 28, color: '#0a0a0a', marginBottom: 12 },
   taskCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 14, position: 'relative', overflow: 'hidden', ...shadow },
   leftBar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 6 },
   taskTitle: { fontFamily: font.semi, fontSize: 14, color: '#000' },
