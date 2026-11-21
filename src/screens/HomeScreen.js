@@ -9,6 +9,16 @@ import ResponsiveScreen from '../components/ResponsiveScreen';
 import BackgroundImage from '../components/BackgroundImage';
 import { colors, font } from '../theme';
 
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function formatTodayDate(date = new Date()) {
+  const dayName = WEEKDAYS[date.getDay()];
+  const monthName = MONTHS[date.getMonth()];
+  const dayNumber = date.getDate();
+  return `${dayName}, ${monthName} ${dayNumber}`;
+}
+
 function Ring({ progress }) {
   const r = 30;
   const c = 2 * Math.PI * r;
@@ -34,6 +44,7 @@ export default function HomeScreen({ user }) {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const displayName = user?.fullName?.trim().split(/\s+/)[0] || 'User';
+  const [todayLabel] = useState(() => formatTodayDate(new Date()));
 
   const todayTasks = [];
   const upcomingTasks = [];
@@ -51,7 +62,7 @@ export default function HomeScreen({ user }) {
   }, [intro]);
 
   const toggle = (id) => setDone((d) => (d.includes(id) ? d.filter((x) => x !== id) : [...d, id]));
-  
+
   const totalTasksCount = todayTasks.length + upcomingTasks.length;
   const progress = totalTasksCount > 0 ? done.length / totalTasksCount : 0;
   const pop = { opacity: intro, transform: [{ scale: intro.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }] };
@@ -63,7 +74,7 @@ export default function HomeScreen({ user }) {
         <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
             <View style={styles.headerRow}>
               <View>
-                <Text style={styles.date}>Monday, Jun 1</Text>
+                <Text style={styles.date}>{todayLabel}</Text>
                 <Text style={styles.greeting}>Good Day,</Text>
                 <Text style={[styles.greeting, { color: colors.purple }]}>{displayName}!</Text>
               </View>
@@ -163,7 +174,7 @@ export default function HomeScreen({ user }) {
         </ScrollView>
       </ResponsiveScreen>
 
-      <Pressable 
+      <Pressable
         style={[styles.fab, { bottom: 80 + insets.bottom }]}
         onPress={() => navigation.navigate('AddTaskScreen')}
       >
