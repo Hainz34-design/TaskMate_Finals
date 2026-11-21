@@ -91,7 +91,7 @@ export default function SignupScreen({ onCreateAccount, onGoToLogin }) {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <Animated.View style={[styles.brandArea, { transform: [{ translateY: intro.interpolate({ inputRange: [0, 1], outputRange: [-18, 0] }) }] }]}>
+            <Animated.View style={[styles.brandArea, { transform: [{ translateY: intro.interpolate({ inputRange: [0, 1], outputRange: [-62, -44] }) }] }]}>
               <Image source={book} contentFit="contain" style={styles.book} />
               <View style={styles.wordmark}>
                 <Text style={styles.logoText}>Task</Text>

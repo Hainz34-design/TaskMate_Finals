@@ -24,6 +24,10 @@ export default function TabNavigator({ onLogout, user }) {
     setTasks(tasks.filter(t => t.id !== id));
   };
 
+  const handleAddTask = (task) => {
+    setTasks(currentTasks => [...currentTasks, task]);
+  };
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -83,12 +87,13 @@ export default function TabNavigator({ onLogout, user }) {
 
       <Tab.Screen
         name="AddTaskScreen"
-        component={AddTaskScreen}
         options={{
           tabBarButton: () => null,
           tabBarItemStyle: { display: 'none' },
         }}
-      />
+      >
+        {() => <AddTaskScreen onAddTask={handleAddTask} />}
+      </Tab.Screen>
     </Tab.Navigator>
   );
 }

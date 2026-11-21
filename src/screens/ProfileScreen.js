@@ -1,73 +1,43 @@
-import React, { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import React from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import ResponsiveScreen from '../components/ResponsiveScreen';
 import BackgroundImage from '../components/BackgroundImage';
 import { colors, font } from '../theme';
 
-function StatCard({ icon, value, label, tint, bubble }) {
+function StatCard({ icon, value, label, tint, bubble, suffix = '' }) {
   return (
     <View style={styles.statCard}>
-      <View style={styles.statIconSlot}>
-        <View style={[styles.statIcon, { backgroundColor: bubble }]}>
-          <Ionicons name={icon} size={25} color={tint} />
-        </View>
+      <View style={[styles.statIcon, { backgroundColor: bubble }]}>
+        <Ionicons name={icon} size={25} color={tint} />
       </View>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+      <View style={styles.statTextWrap}>
+        <Text style={styles.statValue}>{value}{suffix}</Text>
+        <Text style={styles.statLabel}>{label}</Text>
+      </View>
     </View>
-  );
-}
-
-function ToggleRow({ icon, label, value, onValueChange, tint = colors.purple }) {
-  return (
-    <View style={styles.settingRow}>
-      <View style={styles.settingIcon}>
-        <Ionicons name={icon} size={21} color={tint} />
-      </View>
-      <Text style={styles.settingLabel}>{label}</Text>
-      <Switch
-        value={value}
-        onValueChange={onValueChange}
-        trackColor={{ false: '#d5d0ee', true: '#c38aff' }}
-        thumbColor="#fff"
-        ios_backgroundColor="#d5d0ee"
-        accessibilityLabel={label}
-      />
-    </View>
-  );
-}
-
-function LinkRow({ icon, label, onPress, tint = colors.purple }) {
-  return (
-    <Pressable style={styles.settingRow} onPress={onPress} accessibilityRole="button">
-      <View style={styles.settingIcon}>
-        <Ionicons name={icon} size={21} color={tint} />
-      </View>
-      <Text style={styles.settingLabel}>{label}</Text>
-      <Ionicons name="chevron-forward" size={20} color="#b9b9b9" />
-    </Pressable>
   );
 }
 
 export default function ProfileScreen({ tasks = [], onLogout, user }) {
-  const [pushNotifications, setPushNotifications] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
-  const [studyReminders, setStudyReminders] = useState(false);
   const completedCount = tasks.filter((task) => task.completed).length;
   const subjectCount = new Set(tasks.map((task) => task.subject).filter(Boolean)).size;
   const completion = tasks.length ? Math.round((completedCount / tasks.length) * 100) : 0;
-  const initials = user?.fullName?.trim()?.[0]?.toUpperCase() || 'U';
-
-  const showComingSoon = (feature) => {
-    Alert.alert(feature, 'This feature is not available yet.');
-  };
+  const displayName = user?.fullName?.trim() || 'Louise';
+  const displayEmail = user?.email?.trim() || 'louise@louise.edu.ph';
 
   const confirmLogout = () => {
     Alert.alert('Log out', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Log out', style: 'destructive', onPress: onLogout },
+    ]);
+  };
+
+  const showSettings = () => {
+    Alert.alert('Profile Settings', 'Choose an option', [
+      { text: 'Log out', style: 'destructive', onPress: confirmLogout },
+      { text: 'Cancel', style: 'cancel' },
     ]);
   };
 
@@ -80,32 +50,55 @@ export default function ProfileScreen({ tasks = [], onLogout, user }) {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.title}>Profile</Text>
+          <View style={styles.headerRow}>
+            <View>
+              <Text style={styles.title}>Profile</Text>
+              <Text style={styles.subtitle}>Your personal space <Ionicons name="heart-outline" size={12} color={colors.purple} /></Text>
+            </View>
+            <Pressable style={styles.settingsButton} onPress={showSettings} accessibilityRole="button" accessibilityLabel="Profile settings">
+              <Ionicons name="settings-outline" size={21} color="#a951f1" />
+            </Pressable>
+          </View>
 
           <View style={styles.heroWrap}>
             <LinearGradient
-              colors={[colors.purple, '#c98cfe', colors.darkPurple]}
+              colors={['#96c8f5', '#bcdcf7', '#79afe8']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.hero}
             >
-              <View pointerEvents="none" style={styles.heroGlowTop} />
-              <View pointerEvents="none" style={styles.heroGlowBottom} />
-              <View style={styles.heroContent}>
-                <View style={styles.initialBox}>
-                  <Text style={styles.initial}>{initials}</Text>
-                </View>
-                <Text style={styles.profileName}>{user?.fullName || 'TaskMate User'}</Text>
-                <Text style={styles.email}>{user?.email || ''}</Text>
+              <View style={styles.sun} />
+              <View style={[styles.cloud, styles.cloudOne]} />
+              <View style={[styles.cloud, styles.cloudTwo]} />
+              <View style={[styles.cloud, styles.cloudThree]} />
+              <View style={styles.mountainBack} />
+              <View style={styles.mountainFront} />
+              <View style={styles.castle}>
+                <View style={[styles.tower, styles.towerLeft]} />
+                <View style={[styles.tower, styles.towerRight]} />
+                <View style={styles.castleCenter} />
               </View>
+              <LinearGradient
+                colors={['rgba(255,255,255,0.18)', 'rgba(255,255,255,0.38)', 'rgba(255,255,255,0)']}
+                style={styles.heroShade}
+              />
             </LinearGradient>
-          </View>
-
-          <View style={styles.statsRow}>
-            <StatCard icon="book-outline" value={completedCount} label={'Tasks\nDone'} tint="#744cff" bubble="#e5ddff" />
-            <StatCard icon="flame-outline" value={0} label={'Days\nStreak'} tint="#ff7a32" bubble="#fff0d6" />
-            <StatCard icon="locate-outline" value={subjectCount} label="Subjects" tint="#00c978" bubble="#ddfbe8" />
-            <StatCard icon="ribbon-outline" value={0} label={'Month\nGoals'} tint="#f03e4f" bubble="#ffe2e2" />
+            <View style={styles.profileRow}>
+              <View style={styles.avatar}>
+                <Ionicons name="person" size={42} color="#a66ce8" />
+                <Pressable style={styles.editButton} accessibilityRole="button" accessibilityLabel="Edit profile">
+                  <Ionicons name="pencil" size={12} color="#fff" />
+                </Pressable>
+              </View>
+              <View style={styles.profileText}>
+                <Text style={styles.profileName}>{displayName}</Text>
+                <Text style={styles.email}>{displayEmail}</Text>
+                <View style={styles.badge}>
+                  <Ionicons name="star" size={12} color="#7d5fc8" />
+                  <Text style={styles.badgeText}>Personal Workspace</Text>
+                </View>
+              </View>
+            </View>
           </View>
 
           <View style={styles.completionCard}>
@@ -121,49 +114,11 @@ export default function ProfileScreen({ tasks = [], onLogout, user }) {
             </Text>
           </View>
 
-          <Text style={styles.settingsTitle}>Settings</Text>
-          <View style={styles.settingsCard}>
-            <ToggleRow
-              icon="notifications-outline"
-              label="Push Notification"
-              value={pushNotifications}
-              onValueChange={setPushNotifications}
-            />
-            <View style={styles.separator} />
-            <ToggleRow
-              icon="moon-outline"
-              label="Dark Mode"
-              value={darkMode}
-              onValueChange={setDarkMode}
-            />
-            <View style={styles.separator} />
-            <ToggleRow
-              icon="radio-outline"
-              label="Study Reminders"
-              value={studyReminders}
-              onValueChange={setStudyReminders}
-            />
-            <View style={styles.separator} />
-            <LinkRow
-              icon="shield-outline"
-              label="Privacy and Security"
-              onPress={() => showComingSoon('Privacy and Security')}
-              tint="#4acb74"
-            />
-            <View style={styles.separator} />
-            <LinkRow
-              icon="help-circle-outline"
-              label="Help & Support"
-              onPress={() => showComingSoon('Help & Support')}
-              tint="#f5b700"
-            />
-            <View style={styles.separator} />
-            <Pressable style={styles.settingRow} onPress={confirmLogout} accessibilityRole="button">
-              <View style={[styles.settingIcon, styles.logoutIcon]}>
-                <Ionicons name="log-out-outline" size={21} color="#ff5555" />
-              </View>
-              <Text style={styles.logoutLabel}>Log out</Text>
-            </Pressable>
+          <View style={styles.statsGrid}>
+            <StatCard icon="checkmark-done" value={completedCount} label="Tasks Completed" tint="#ad55ff" bubble="#f0e5ff" />
+            <StatCard icon="flag" value={completion} label="Completion Rate" tint="#14bd91" bubble="#dff9ed" suffix="%" />
+            <StatCard icon="flame" value={0} label="Current Streak" tint="#ff7b45" bubble="#ffe8df" />
+            <StatCard icon="calendar-clear" value={subjectCount} label="Monthly Goals" tint="#4d85ef" bubble="#e3edff" />
           </View>
         </ScrollView>
       </ResponsiveScreen>
@@ -174,103 +129,131 @@ export default function ProfileScreen({ tasks = [], onLogout, user }) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.screenBg },
   scroll: { flex: 1 },
-  scrollContent: { width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 18, paddingTop: 20, paddingBottom: 130 },
-  title: { fontFamily: font.bold, fontSize: 26, color: '#111', marginBottom: 15 },
-  heroWrap: {
-    height: 266,
-    borderRadius: 22,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-  },
-  hero: { flex: 1, borderRadius: 22, overflow: 'hidden' },
-  heroGlowTop: {
-    position: 'absolute',
-    top: -60,
-    right: -25,
-    width: 190,
-    height: 190,
-    borderRadius: 95,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-  },
-  heroGlowBottom: {
-    position: 'absolute',
-    left: -52,
-    bottom: -96,
-    width: 250,
-    height: 190,
-    borderRadius: 125,
-    backgroundColor: 'rgba(83,0,158,0.16)',
-  },
-  heroContent: { ...StyleSheet.absoluteFillObject, alignItems: 'center', paddingTop: 31 },
-  initialBox: {
-    width: 88,
-    height: 88,
+  scrollContent: { width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 17, paddingTop: 24, paddingBottom: 110 },
+  headerRow: { height: 66, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  title: { fontFamily: font.bold, fontSize: 26, lineHeight: 31, color: '#171365' },
+  subtitle: { marginTop: 3, fontFamily: font.regular, fontSize: 12, color: '#5966a1' },
+  settingsButton: {
+    width: 46,
+    height: 46,
+    marginTop: -2,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 24,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.9)',
-    backgroundColor: 'rgba(255,255,255,0.28)',
-  },
-  initial: { fontFamily: font.regular, fontSize: 58, color: '#fff', lineHeight: 70 },
-  profileName: { marginTop: 5, fontFamily: font.bold, fontSize: 30, color: '#fff', textShadowColor: 'rgba(0,0,0,0.4)', textShadowRadius: 5 },
-  email: { marginTop: 1, fontFamily: font.regular, fontSize: 12, color: '#fff', textShadowColor: 'rgba(0,0,0,0.55)', textShadowRadius: 4 },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, marginTop: 17 },
-  statCard: {
-    flex: 1,
-    minWidth: 0,
-    minHeight: 128,
-    alignItems: 'center',
-    paddingTop: 12,
-    borderRadius: 18,
+    borderRadius: 23,
     backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOpacity: 0.14,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
   },
-  statIconSlot: { width: 44, height: 48, alignItems: 'center', justifyContent: 'center' },
-  statIcon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22 },
-  statValue: { height: 25, marginTop: 4, fontFamily: font.bold, fontSize: 19, lineHeight: 24, color: '#111' },
-  statLabel: { height: 30, marginTop: 1, fontFamily: font.regular, fontSize: 11, lineHeight: 15, textAlign: 'center', textAlignVertical: 'top', color: colors.grey },
+  heroWrap: {
+    height: 192,
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
+  },
+  hero: { position: 'absolute', left: 0, right: 0, top: 0, height: 122, overflow: 'hidden' },
+  heroShade: { ...StyleSheet.absoluteFillObject },
+  sun: { position: 'absolute', right: 28, top: 18, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,248,183,0.85)' },
+  cloud: { position: 'absolute', width: 86, height: 22, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.78)' },
+  cloudOne: { left: 12, top: 27 },
+  cloudTwo: { right: 38, top: 55 },
+  cloudThree: { left: 118, top: 70, width: 64, opacity: 0.7 },
+  mountainBack: { position: 'absolute', right: -25, bottom: -38, width: 210, height: 150, borderRadius: 70, backgroundColor: '#7da6d6', transform: [{ rotate: '32deg' }] },
+  mountainFront: { position: 'absolute', right: 0, bottom: -70, width: 170, height: 150, borderRadius: 75, backgroundColor: '#638dc4', transform: [{ rotate: '-24deg' }] },
+  castle: { position: 'absolute', right: 49, bottom: 12, width: 58, height: 76 },
+  tower: { position: 'absolute', bottom: 0, width: 20, height: 58, borderRadius: 3, backgroundColor: '#728db1' },
+  towerLeft: { left: 0 },
+  towerRight: { right: 0 },
+  castleCenter: { position: 'absolute', left: 15, bottom: 0, width: 28, height: 72, borderTopLeftRadius: 14, borderTopRightRadius: 14, backgroundColor: '#809abd' },
+  profileRow: {
+    position: 'absolute',
+    left: 17,
+    right: 17,
+    bottom: 14,
+    height: 82,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatar: {
+    width: 78,
+    height: 78,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 39,
+    borderWidth: 3,
+    borderColor: '#fff',
+    backgroundColor: '#eee7ff',
+  },
+  editButton: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    width: 25,
+    height: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 13,
+    borderWidth: 2,
+    borderColor: '#fff',
+    backgroundColor: '#6757b9',
+  },
+  profileText: { marginLeft: 17, justifyContent: 'center' },
+  profileName: { fontFamily: font.bold, fontSize: 18, lineHeight: 22, color: '#17171e' },
+  email: { marginTop: 1, fontFamily: font.regular, fontSize: 10, color: '#8a8a91' },
+  badge: {
+    height: 24,
+    marginTop: 7,
+    paddingHorizontal: 9,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: 7,
+    backgroundColor: '#efeaff',
+  },
+  badgeText: { fontFamily: font.semi, fontSize: 9, color: '#5f55aa' },
   completionCard: {
-    marginTop: 17,
+    marginTop: 16,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderRadius: 18,
+    borderRadius: 16,
     backgroundColor: '#fff',
     shadowColor: '#000',
-    shadowOpacity: 0.14,
-    shadowRadius: 4,
+    shadowOpacity: 0.12,
+    shadowRadius: 5,
     shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    elevation: 2,
   },
   completionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  completionTitle: { fontFamily: font.semi, fontSize: 14, color: '#111' },
+  completionTitle: { fontFamily: font.semi, fontSize: 14, color: '#17171e' },
   completionPercent: { fontFamily: font.bold, fontSize: 14, color: colors.purple },
-  progressTrack: { height: 9, marginTop: 10, borderRadius: 6, backgroundColor: '#eee8ff', overflow: 'hidden' },
-  progressFill: { height: '100%', borderRadius: 6, backgroundColor: colors.purple },
-  completionCaption: { marginTop: 6, fontFamily: font.regular, fontSize: 11, color: colors.grey },
-  settingsTitle: { marginTop: 25, marginBottom: 7, fontFamily: font.bold, fontSize: 17, letterSpacing: 1.2, color: '#999' },
-  settingsCard: {
+  progressTrack: { height: 8, marginTop: 10, borderRadius: 5, backgroundColor: '#eee8ff', overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 5, backgroundColor: colors.purple },
+  completionCaption: { marginTop: 6, fontFamily: font.regular, fontSize: 10, color: '#9998a1' },
+  statsGrid: {
+    marginTop: 16,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 12,
+  },
+  statCard: {
+    width: '48.5%',
+    height: 82,
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 14,
-    borderRadius: 19,
+    borderRadius: 16,
     backgroundColor: '#fff',
     shadowColor: '#000',
-    shadowOpacity: 0.14,
-    shadowRadius: 4,
+    shadowOpacity: 0.12,
+    shadowRadius: 5,
     shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    elevation: 2,
   },
-  settingRow: { minHeight: 59, flexDirection: 'row', alignItems: 'center' },
-  settingIcon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 24, backgroundColor: '#f0dcff' },
-  settingLabel: { flex: 1, marginLeft: 12, fontFamily: font.medium, fontSize: 14, color: '#151515' },
-  separator: { height: StyleSheet.hairlineWidth, backgroundColor: '#d9d9d9' },
-  logoutIcon: { backgroundColor: '#ffe1e1' },
-  logoutLabel: { marginLeft: 12, fontFamily: font.medium, fontSize: 14, color: '#ff5555' },
+  statIcon: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 24 },
+  statTextWrap: { marginLeft: 10 },
+  statValue: { fontFamily: font.bold, fontSize: 18, lineHeight: 21, color: '#17171e' },
+  statLabel: { marginTop: 2, fontFamily: font.regular, fontSize: 9, lineHeight: 12, color: '#9998a1' },
 });

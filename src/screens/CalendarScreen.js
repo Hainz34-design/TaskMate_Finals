@@ -6,6 +6,35 @@ import ResponsiveScreen from '../components/ResponsiveScreen';
 import BackgroundImage from '../components/BackgroundImage';
 import { colors, font } from '../theme';
 
+function parseDueDate(value) {
+  if (typeof value !== 'string') return null;
+
+  const date = value.trim();
+  const monthFirst = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(date);
+  const yearFirst = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(date);
+  if (!monthFirst && !yearFirst) return null;
+
+  const year = Number(monthFirst ? monthFirst[3] : yearFirst[1]);
+  const month = Number(monthFirst ? monthFirst[1] : yearFirst[2]) - 1;
+  const day = Number(monthFirst ? monthFirst[2] : yearFirst[3]);
+  const parsedDate = new Date(year, month, day);
+
+  if (
+    parsedDate.getFullYear() !== year
+    || parsedDate.getMonth() !== month
+    || parsedDate.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return { year, month, day };
+}
+
+function isTaskOnDate(task, year, month, day) {
+  const dueDate = parseDueDate(task.dueDate);
+  return dueDate?.year === year && dueDate.month === month && dueDate.day === day;
+}
+
 export default function CalendarScreen({ tasks = [], onToggleTask, onDeleteTask }) {
   const [currentMonthIndex, setCurrentMonthIndex] = useState(5);
   const [currentYear, setCurrentYear] = useState(2026);
@@ -70,8 +99,12 @@ export default function CalendarScreen({ tasks = [], onToggleTask, onDeleteTask 
 
   const getTaskDotsForDay = (dayNum) => {
     if (!dayNum) return [];
-    const dayStr = String(dayNum);
-    const matchingTasks = tasks.filter(t => t.dueDate && t.dueDate.includes(dayStr));
+    const matchingTasks = tasks.filter((task) => isTaskOnDate(
+      task,
+      currentYear,
+      currentMonthIndex,
+      dayNum,
+    ));
 
     const colorsList = matchingTasks.map(t => {
       if (t.priority?.label === 'HIGH') return '#ff6262';
@@ -79,19 +112,15 @@ export default function CalendarScreen({ tasks = [], onToggleTask, onDeleteTask 
       return '#4cd964';
     });
 
-    if (currentMonthIndex === 5 && currentYear === 2026) {
-      if (dayNum === 3) colorsList.push('#ff6262', '#ffae00');
-      if (dayNum === 4) colorsList.push('#ff6262');
-      if (dayNum === 5) colorsList.push('#4cd964', '#ffae00');
-    }
-
     return [...new Set(colorsList)].slice(0, 3);
   };
 
-  const selectedDayTasks = tasks.filter(t => {
-    if (!t.dueDate) return false;
-    return t.dueDate.includes(String(selectedDate));
-  });
+  const selectedDayTasks = tasks.filter((task) => isTaskOnDate(
+    task,
+    currentYear,
+    currentMonthIndex,
+    Number(selectedDate),
+  ));
 
   return (
     <View style={styles.root}>

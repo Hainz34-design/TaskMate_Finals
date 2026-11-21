@@ -92,7 +92,7 @@ export default function LoginScreen({ onLogin, onGoToSignup }) {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <Animated.View style={[styles.brandArea, { transform: [{ translateY: intro.interpolate({ inputRange: [0, 1], outputRange: [-18, 0] }) }] }]}>
+            <Animated.View style={[styles.brandArea, { transform: [{ translateY: intro.interpolate({ inputRange: [0, 1], outputRange: [-62, -44] }) }] }]}>
               <Image source={book} contentFit="contain" style={styles.book} />
               <View style={styles.wordmark}>
                 <Text style={styles.logoText}>Task</Text>
@@ -141,9 +141,6 @@ export default function LoginScreen({ onLogin, onGoToSignup }) {
                 <Ionicons name="arrow-forward" size={16} color="#fff" />
               </Pressable>
 
-              
-
-              
             </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>

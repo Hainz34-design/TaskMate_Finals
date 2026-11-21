@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -7,7 +7,13 @@ import ResponsiveScreen from '../components/ResponsiveScreen';
 import BackgroundImage from '../components/BackgroundImage';
 import { font } from '../theme';
 
-export default function AddTaskScreen() {
+const PRIORITY_STYLES = {
+  HIGH: { color: '#ff6262', bg: 'rgba(255,98,98,0.12)' },
+  MEDIUM: { color: '#ffae00', bg: 'rgba(255,174,0,0.12)' },
+  LOW: { color: '#4cd964', bg: 'rgba(76,217,100,0.12)' },
+};
+
+export default function AddTaskScreen({ onAddTask }) {
   const navigation = useNavigation();
 
   const [title, setTitle] = useState('');
@@ -18,7 +24,21 @@ export default function AddTaskScreen() {
   const [subject, setSubject] = useState('');
 
   const handleSaveTask = () => {
-    console.log({ title, description, dueDate, time, priority, subject });
+    if (!title.trim()) {
+      Alert.alert('Task title required', 'Enter a task title before adding it.');
+      return;
+    }
+
+    onAddTask({
+      id: String(Date.now()),
+      title: title.trim(),
+      description: description.trim(),
+      dueDate: dueDate.trim(),
+      time: time.trim(),
+      priority: { label: priority, ...PRIORITY_STYLES[priority] },
+      subject: subject.trim(),
+      completed: false,
+    });
     navigation.goBack();
   };
 
