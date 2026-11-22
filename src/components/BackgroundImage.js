@@ -1,18 +1,12 @@
 import React from 'react';
 import { Image, StyleSheet } from 'react-native';
 
-const backgroundImage = require('../../assets/bgImageClear.png');
 
 export default function BackgroundImage({ style, opacity = 1 }) {
   return (
     <Image
-      source={backgroundImage}
-      pointerEvents="none"
-      style={[
-        styles.background,
-        { opacity },
-        style,
-      ]}
+      source={require('../../assets/bground.png')}
+      style={StyleSheet.absoluteFill}
       resizeMode="cover"
     />
   );
