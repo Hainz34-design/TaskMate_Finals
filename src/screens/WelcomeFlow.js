@@ -26,15 +26,24 @@ const PAGES = [
 const ILLUSTRATIONS = [PageOne, PageTwo, PageThree];
 
 export default function WelcomeFlow({ onDone }) {
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const [index, setIndex] = useState(0);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [showPurple, setShowPurple] = useState(false);
   const [enter] = useState(() => new Animated.Value(0));
-  const [pos] = useState(() => new Animated.Value(0));
+  const [slideOpacity] = useState(() => new Animated.Value(1));
   const [transition] = useState(() => new Animated.Value(0));
-  const slideDistance = Math.min(width, 520);
+  const isShortScreen = height < 700;
+  const isVeryShortScreen = height < 580;
+  const illustrationWidth = Math.min(
+    width - (width < 360 ? 24 : 40),
+    isVeryShortScreen ? 160 : isShortScreen ? 220 : 320,
+    height * 0.34,
+  );
+  const horizontalPadding = width < 360 ? 12 : 20;
+  const titleSize = isVeryShortScreen ? 19 : isShortScreen ? 21 : 23;
+  const bodySize = isVeryShortScreen ? 12 : isShortScreen ? 13 : 14;
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -47,8 +56,10 @@ export default function WelcomeFlow({ onDone }) {
   }, [enter]);
 
   const goTo = (nextIndex) => {
+    slideOpacity.stopAnimation();
+    slideOpacity.setValue(0);
     setIndex(nextIndex);
-    Animated.spring(pos, { toValue: nextIndex, bounciness: 0, speed: 14, useNativeDriver: true }).start();
+    Animated.timing(slideOpacity, { toValue: 1, duration: 180, useNativeDriver: true }).start();
   };
 
   const finish = () => {
@@ -82,9 +93,9 @@ export default function WelcomeFlow({ onDone }) {
     <View style={styles.root}>
       <BackgroundImage />
       <ResponsiveScreen>
-        <View style={styles.page}>
-          <View style={styles.brandRow}>
-            <Image source={logo} contentFit="contain" style={styles.brandImage} />
+        <View style={[styles.page, { paddingHorizontal: horizontalPadding }, isVeryShortScreen && styles.compactPage]}>
+          <View style={[styles.brandRow, isVeryShortScreen && styles.compactBrandRow]}>
+            <Image source={logo} contentFit="contain" style={[styles.brandImage, isVeryShortScreen && styles.compactBrandImage]} />
             <Text style={styles.wordmark}>
               <Text style={styles.wordTask}>Task</Text>
               <Text style={styles.wordMate}>Mate</Text>
@@ -100,36 +111,23 @@ export default function WelcomeFlow({ onDone }) {
               },
             ]}
           >
-            <View style={styles.slideStage}>
-              {ILLUSTRATIONS.map((Page, pageIndex) => (
-                <Animated.View
-                  key={`slide-${pageIndex}`}
-                  pointerEvents={pageIndex === index ? 'auto' : 'none'}
-                  style={[
-                    styles.slide,
-                    {
-                      opacity: pos.interpolate({
-                        inputRange: [pageIndex - 0.5, pageIndex, pageIndex + 0.5],
-                        outputRange: [0, 1, 0],
-                        extrapolate: 'clamp',
-                      }),
-                      transform: [
-                        {
-                          translateX: pos.interpolate({
-                            inputRange: [pageIndex - 1, pageIndex, pageIndex + 1],
-                            outputRange: [slideDistance, 0, -slideDistance],
-                          }),
-                        },
-                      ],
-                    },
-                  ]}
-                >
-                  <Page />
-                  <Text style={styles.title}>{PAGES[pageIndex].title}</Text>
-                  <Text style={styles.body}>{PAGES[pageIndex].body}</Text>
-                </Animated.View>
-              ))}
-            </View>
+            <Animated.View
+              style={[
+                styles.slide,
+                {
+                  opacity: slideOpacity,
+                  transform: [{ translateX: slideOpacity.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }],
+                },
+              ]}
+            >
+              {React.createElement(ILLUSTRATIONS[index], { illustrationWidth })}
+              <Text style={[styles.title, { fontSize: titleSize, lineHeight: titleSize + 7 }, isVeryShortScreen && styles.compactTitle]}>
+                {PAGES[index].title}
+              </Text>
+              <Text style={[styles.body, { fontSize: bodySize, lineHeight: bodySize + 7 }, isVeryShortScreen && styles.compactBody]}>
+                {PAGES[index].body}
+              </Text>
+            </Animated.View>
           </Animated.View>
 
           <View style={styles.footer}>
@@ -171,18 +169,22 @@ export default function WelcomeFlow({ onDone }) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f5f0ff' },
+  root: { flex: 1, width: '100%', height: '100%', overflow: 'hidden', backgroundColor: '#f5f0ff' },
   page: { flex: 1, width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 14 },
+  compactPage: { paddingTop: 4, paddingBottom: 8 },
   brandRow: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  compactBrandRow: { minHeight: 38 },
   brandImage: { width: 42, height: 42 },
+  compactBrandImage: { width: 34, height: 34 },
   wordmark: { fontFamily: font.bold, fontSize: 24 },
   wordTask: { color: '#111' },
   wordMate: { color: colors.purple },
   main: { flex: 1, minHeight: 0, justifyContent: 'center' },
-  slideStage: { flex: 1, minHeight: 0, width: '100%', alignSelf: 'center', overflow: 'hidden' },
-  slide: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  slide: { flex: 1, width: '100%', minHeight: 0, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', paddingHorizontal: 4 },
   title: { width: '100%', marginTop: 18, textAlign: 'center', fontFamily: font.bold, fontSize: 23, lineHeight: 30, color: '#17121e' },
+  compactTitle: { marginTop: 6 },
   body: { width: '100%', maxWidth: 360, marginTop: 8, textAlign: 'center', fontFamily: font.medium, fontSize: 14, lineHeight: 21, color: '#645c70' },
+  compactBody: { marginTop: 4 },
   footer: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingTop: 12 },
   sideAction: { minWidth: 52, minHeight: 44, alignItems: 'flex-start', justifyContent: 'center' },
   sideActionText: { fontFamily: font.semi, fontSize: 14, color: colors.purple },

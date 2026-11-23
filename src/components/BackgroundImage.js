@@ -6,7 +6,7 @@ export default function BackgroundImage({ style, opacity = 1 }) {
   return (
     <Image
       source={require('../../assets/bground.png')}
-      style={StyleSheet.absoluteFill}
+      style={[StyleSheet.absoluteFill, styles.background, style]}
       resizeMode="cover"
     />
   );
@@ -14,9 +14,6 @@ export default function BackgroundImage({ style, opacity = 1 }) {
 
 const styles = StyleSheet.create({
   background: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
     width: '100%',
     height: '100%',
   },
