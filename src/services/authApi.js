@@ -1,3 +1,4 @@
+// this is authapi.js 
 const configuredApiUrl = process.env.EXPO_PUBLIC_API_URL;
 const apiBaseUrl = configuredApiUrl ? configuredApiUrl.replace(/\/+$/, '') : '';
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,25 +8,23 @@ import TasksScreen from '../screens/TasksScreen';
 import CalendarScreen from '../screens/CalendarScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import AddTaskScreen from '../screens/AddTaskScreen';
+import PrivacySecurityScreen from '../screens/PrivacySecurityScreen';
 import { colors, font } from '../theme';
 
 const Tab = createBottomTabNavigator();
 
-export default function TabNavigator({ onLogout, user }) {
+// tasks and the add / toggle / delete handlers now come from App.js (saved in MongoDB)
+export default function TabNavigator({
+  onLogout,
+  user,
+  tasks = [],
+  onAddTask,
+  onToggleTask,
+  onDeleteTask,
+  profileImages,
+  onChangeImage,
+}) {
   const insets = useSafeAreaInsets();
-  const [tasks, setTasks] = useState([]);
-
-  const handleToggleTask = (id) => {
-    setTasks(tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
-  };
-
-  const handleDeleteTask = (id) => {
-    setTasks(tasks.filter(t => t.id !== id));
-  };
-
-  const handleAddTask = (task) => {
-    setTasks(currentTasks => [...currentTasks, task]);
-  };
 
   return (
     <Tab.Navigator
@@ -57,32 +55,40 @@ export default function TabNavigator({ onLogout, user }) {
     >
       <Tab.Screen name="Home">
         {() => (
-          <HomeScreen user={user} tasks={tasks} onToggleTask={handleToggleTask} />
+          <HomeScreen user={user} tasks={tasks} onToggleTask={onToggleTask} />
         )}
       </Tab.Screen>
 
       <Tab.Screen name="Tasks">
         {() => (
-          <TasksScreen 
-            tasks={tasks} 
-            onToggleTask={handleToggleTask} 
-            onDeleteTask={handleDeleteTask} 
+          <TasksScreen
+            tasks={tasks}
+            onToggleTask={onToggleTask}
+            onDeleteTask={onDeleteTask}
           />
         )}
       </Tab.Screen>
 
       <Tab.Screen name="Calendar">
         {() => (
-          <CalendarScreen 
-            tasks={tasks} 
-            onToggleTask={handleToggleTask} 
-            onDeleteTask={handleDeleteTask} 
+          <CalendarScreen
+            tasks={tasks}
+            onToggleTask={onToggleTask}
+            onDeleteTask={onDeleteTask}
           />
         )}
       </Tab.Screen>
 
       <Tab.Screen name="Profile">
-        {() => <ProfileScreen tasks={tasks} onLogout={onLogout} user={user} />}
+        {() => (
+          <ProfileScreen
+            tasks={tasks}
+            onLogout={onLogout}
+            user={user}
+            profileImages={profileImages}
+            onChangeImage={onChangeImage}
+          />
+        )}
       </Tab.Screen>
 
       <Tab.Screen
@@ -92,7 +98,17 @@ export default function TabNavigator({ onLogout, user }) {
           tabBarItemStyle: { display: 'none' },
         }}
       >
-        {() => <AddTaskScreen onAddTask={handleAddTask} />}
+        {() => <AddTaskScreen onAddTask={onAddTask} />}
+      </Tab.Screen>
+
+      <Tab.Screen
+        name="PrivacySecurity"
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+        }}
+      >
+        {() => <PrivacySecurityScreen user={user} />}
       </Tab.Screen>
     </Tab.Navigator>
   );
@@ -130,9 +146,9 @@ const styles = StyleSheet.create({
   activeIconContainer: {
     backgroundColor: 'rgba(229,199,255,0.6)',
   },
-  tabLabel: { 
-    fontFamily: font.medium, 
-    fontSize: 11, 
-    marginTop: 2 
+  tabLabel: {
+    fontFamily: font.medium,
+    fontSize: 11,
+    marginTop: 2,
   },
 });

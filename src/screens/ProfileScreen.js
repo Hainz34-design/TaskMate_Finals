@@ -1,259 +1,347 @@
-import React from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Image, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
+import { useNavigation } from '@react-navigation/native';
 import ResponsiveScreen from '../components/ResponsiveScreen';
 import BackgroundImage from '../components/BackgroundImage';
 import { colors, font } from '../theme';
 
-function StatCard({ icon, value, label, tint, bubble, suffix = '' }) {
+const INK = '#2b1a6b';
+
+// Opens the photo library, shrinks the photo, and returns a small base64 data URL
+async function pickImage(kind) {
+  const isAvatar = kind === 'avatar';
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    allowsEditing: true,
+    aspect: isAvatar ? [1, 1] : [16, 9],
+    quality: 1,
+  });
+  if (result.canceled || !result.assets?.length) return null;
+
+  const context = ImageManipulator.manipulate(result.assets[0].uri);
+  context.resize({ width: isAvatar ? 400 : 900 });
+  const rendered = await context.renderAsync();
+  const saved = await rendered.saveAsync({
+    format: SaveFormat.JPEG,
+    compress: 0.7,
+    base64: true,
+  });
+  return `data:image/jpeg;base64,${saved.base64}`;
+}
+
+function StatCard({ icon, value, label, tint, bubble, wash, suffix = '' }) {
   return (
-    <View style={styles.statCard}>
+    <LinearGradient colors={['#ffffff', wash]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.statCard}>
       <View style={[styles.statIcon, { backgroundColor: bubble }]}>
-        <Ionicons name={icon} size={25} color={tint} />
+        <Ionicons name={icon} size={22} color={tint} />
       </View>
-      <View style={styles.statTextWrap}>
+      <View style={styles.statText}>
         <Text style={styles.statValue}>{value}{suffix}</Text>
         <Text style={styles.statLabel}>{label}</Text>
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
-export default function ProfileScreen({ tasks = [], onLogout, user }) {
-  const completedCount = tasks.filter((task) => task.completed).length;
-  const subjectCount = new Set(tasks.map((task) => task.subject).filter(Boolean)).size;
-  const completion = tasks.length ? Math.round((completedCount / tasks.length) * 100) : 0;
-  const displayName = user?.fullName?.trim() || 'Louise';
-  const displayEmail = user?.email?.trim() || 'louise@louise.edu.ph';
+function Row({ icon, label, right, onPress, danger, tint = '#a951f1', bubble = '#efe3ff', last }) {
+  const Wrapper = onPress ? Pressable : View;
+  return (
+    <Wrapper onPress={onPress} style={[styles.row, !last && styles.rowDivider]}>
+      <View style={[styles.bubble, { backgroundColor: bubble }]}>
+        <Ionicons name={icon} size={22} color={tint} />
+      </View>
+      <Text style={[styles.rowLabel, danger && { color: '#ff5a6a' }]}>{label}</Text>
+      {right}
+    </Wrapper>
+  );
+}
 
-  const confirmLogout = () => {
-    Alert.alert('Log out', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Log out', style: 'destructive', onPress: onLogout },
-    ]);
+function Toggle({ value, onValueChange }) {
+  return (
+    <Switch
+      value={value}
+      onValueChange={onValueChange}
+      trackColor={{ false: '#d4cdf0', true: '#b45cff' }}
+      thumbColor="#fff"
+    />
+  );
+}
+
+function DialogModal({ visible, title, message, onClose, actions }) {
+  return (
+    <Modal transparent animationType="fade" visible={visible} onRequestClose={onClose}>
+      <Pressable style={styles.backdrop} onPress={onClose}>
+        <Pressable style={styles.dialog} onPress={() => {}}>
+          <Text style={styles.dialogTitle}>{title}</Text>
+          <Text style={styles.dialogMessage}>{message}</Text>
+          <View style={styles.dialogActions}>
+            {actions.map((a) => (
+              <Pressable
+                key={a.label}
+                style={[styles.dialogBtn, a.primary && styles.dialogBtnPrimary]}
+                onPress={a.onPress}
+              >
+                <Text style={[styles.dialogBtnText, a.primary && styles.dialogBtnTextPrimary]}>{a.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+export default function ProfileScreen({ tasks = [], onLogout, user, profileImages = {}, onChangeImage }) {
+  const navigation = useNavigation();
+
+  const [pushOn, setPushOn] = useState(false);
+  const [darkOn, setDarkOn] = useState(false);
+  const [remindOn, setRemindOn] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [busy, setBusy] = useState('');
+  const [message, setMessage] = useState('');
+
+  const displayName = user?.fullName?.trim() || 'User';
+  const displayEmail = user?.email?.trim() || '';
+  const initial = displayName.charAt(0).toUpperCase();
+
+  const completedCount = tasks.filter((t) => t.completed).length;
+  const completion = tasks.length ? Math.round((completedCount / tasks.length) * 100) : 0;
+  const now = new Date();
+  const monthPrefix = `${String(now.getMonth() + 1).padStart(2, '0')}/`;
+  const monthGoals = tasks.filter(
+    (t) => t.dueDate && t.dueDate.startsWith(monthPrefix) && t.dueDate.endsWith(`/${now.getFullYear()}`)
+  ).length;
+  const streak = 0;
+
+  const changeImage = async (kind) => {
+    if (busy) return;
+    setMessage('');
+    setBusy(kind);
+    try {
+      const dataUri = await pickImage(kind);
+      if (dataUri && onChangeImage) await onChangeImage(kind, dataUri);
+    } catch (e) {
+      setMessage(e.message || 'Could not update the picture. Try again.');
+    } finally {
+      setBusy('');
+    }
   };
 
-  const showSettings = () => {
-    Alert.alert('Profile Settings', 'Choose an option', [
-      { text: 'Log out', style: 'destructive', onPress: confirmLogout },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+  const confirmLogout = () => {
+    setLogoutOpen(false);
+    if (onLogout) onLogout();
   };
 
   return (
     <View style={styles.root}>
       <BackgroundImage />
       <ResponsiveScreen>
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.headerRow}>
-            <View>
-              <Text style={styles.title}>Profile</Text>
-              <Text style={styles.subtitle}>Your personal space <Ionicons name="heart-outline" size={12} color={colors.purple} /></Text>
-            </View>
-            <Pressable style={styles.settingsButton} onPress={showSettings} accessibilityRole="button" accessibilityLabel="Profile settings">
-              <Ionicons name="settings-outline" size={21} color="#a951f1" />
-            </Pressable>
-          </View>
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <Text style={styles.title}>Profile</Text>
+          <Text style={styles.subtitle}>
+            Your personal space <Ionicons name="heart-outline" size={12} color={colors.purple} />
+          </Text>
 
-          <View style={styles.heroWrap}>
+          {/* Cover + avatar */}
+          <View style={styles.hero}>
+            {profileImages.cover ? (
+              <Image source={{ uri: profileImages.cover }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            ) : (
+              <LinearGradient colors={['#8e6bff', '#c98cfe', '#79afe8']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+            )}
             <LinearGradient
-              colors={['#96c8f5', '#bcdcf7', '#79afe8']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.hero}
-            >
-              <View style={styles.sun} />
-              <View style={[styles.cloud, styles.cloudOne]} />
-              <View style={[styles.cloud, styles.cloudTwo]} />
-              <View style={[styles.cloud, styles.cloudThree]} />
-              <View style={styles.mountainBack} />
-              <View style={styles.mountainFront} />
-              <View style={styles.castle}>
-                <View style={[styles.tower, styles.towerLeft]} />
-                <View style={[styles.tower, styles.towerRight]} />
-                <View style={styles.castleCenter} />
-              </View>
-              <LinearGradient
-                colors={['rgba(255,255,255,0.18)', 'rgba(255,255,255,0.38)', 'rgba(255,255,255,0)']}
-                style={styles.heroShade}
-              />
-            </LinearGradient>
+              colors={['rgba(20,8,60,0)', 'rgba(20,8,60,0.72)']}
+              locations={[0.3, 1]}
+              style={StyleSheet.absoluteFill}
+              pointerEvents="none"
+            />
+
+            <Pressable style={styles.editCover} onPress={() => changeImage('cover')}>
+              <Ionicons name="pencil" size={11} color="#fff" />
+              <Text style={styles.editCoverText}>{busy === 'cover' ? 'Saving...' : 'Edit cover'}</Text>
+            </Pressable>
+
             <View style={styles.profileRow}>
-              <View style={styles.avatar}>
-                <Ionicons name="person" size={42} color="#a66ce8" />
-                <Pressable style={styles.editButton} accessibilityRole="button" accessibilityLabel="Edit profile">
-                  <Ionicons name="pencil" size={12} color="#fff" />
-                </Pressable>
-              </View>
+              <Pressable style={styles.avatarWrap} onPress={() => changeImage('avatar')} accessibilityLabel="Change profile picture">
+                <View style={styles.avatar}>
+                  {profileImages.avatar ? (
+                    <Image source={{ uri: profileImages.avatar }} style={styles.avatarImage} resizeMode="cover" />
+                  ) : (
+                    <Text style={styles.avatarLetter}>{initial}</Text>
+                  )}
+                </View>
+                <View style={styles.pencil}>
+                  <Ionicons name={busy === 'avatar' ? 'hourglass-outline' : 'pencil'} size={11} color="#fff" />
+                </View>
+              </Pressable>
+
               <View style={styles.profileText}>
-                <Text style={styles.profileName}>{displayName}</Text>
-                <Text style={styles.email}>{displayEmail}</Text>
+                <Text style={styles.name} numberOfLines={1}>{displayName}</Text>
+                <Text style={styles.email} numberOfLines={1}>{displayEmail}</Text>
                 <View style={styles.badge}>
-                  <Ionicons name="star" size={12} color="#7d5fc8" />
+                  <Ionicons name="star" size={11} color="#7d5fc8" />
                   <Text style={styles.badgeText}>Personal Workspace</Text>
                 </View>
               </View>
             </View>
           </View>
+          {message ? <Text style={styles.error}>{message}</Text> : null}
 
-          <View style={styles.completionCard}>
-            <View style={styles.completionHeader}>
-              <Text style={styles.completionTitle}>Overall Completion</Text>
-              <Text style={styles.completionPercent}>{completion}%</Text>
-            </View>
-            <View style={styles.progressTrack}>
-              <View style={[styles.progressFill, { width: `${completion}%` }]} />
-            </View>
-            <Text style={styles.completionCaption}>
-              {completedCount} of {tasks.length} tasks completed
-            </Text>
+          {/* Stats */}
+          <View style={styles.statsGrid}>
+            <StatCard icon="book-outline" value={completedCount} label="Tasks Completed" tint="#8b3dff" bubble="#efe3ff" wash="#ece0ff" />
+            <StatCard icon="radio-button-on" value={completion} suffix="%" label="Completion Rate" tint="#14bd91" bubble="#d9f6ea" wash="#d6f5e8" />
+            <StatCard icon="flame-outline" value={streak} label="Current Streak" tint="#ff7b45" bubble="#ffe6da" wash="#ffe3d6" />
+            <StatCard icon="calendar-outline" value={monthGoals} label="Month Goals" tint="#4d85ef" bubble="#e0eaff" wash="#dbe7ff" />
           </View>
 
-          <View style={styles.statsGrid}>
-            <StatCard icon="checkmark-done" value={completedCount} label="Tasks Completed" tint="#ad55ff" bubble="#f0e5ff" />
-            <StatCard icon="flag" value={completion} label="Completion Rate" tint="#14bd91" bubble="#dff9ed" suffix="%" />
-            <StatCard icon="flame" value={0} label="Current Streak" tint="#ff7b45" bubble="#ffe8df" />
-            <StatCard icon="calendar-clear" value={subjectCount} label="Monthly Goals" tint="#4d85ef" bubble="#e3edff" />
+          {/* Settings */}
+          <Text style={styles.sectionTitle}>Settings</Text>
+          <View style={styles.card}>
+            <Row icon="notifications-outline" label="Push Notification" right={<Toggle value={pushOn} onValueChange={setPushOn} />} />
+            <Row icon="moon-outline" label="Dark Mode" right={<Toggle value={darkOn} onValueChange={setDarkOn} />} />
+            <Row icon="alarm-outline" label="Task Reminders" tint="#ffae00" right={<Toggle value={remindOn} onValueChange={setRemindOn} />} />
+            <Row
+              icon="shield-outline"
+              label="Privacy and Security"
+              tint="#4cd964"
+              onPress={() => navigation.navigate('PrivacySecurity')}
+              right={<Ionicons name="chevron-forward" size={20} color="#9a9aa5" />}
+            />
+            <Row
+              icon="help-circle-outline"
+              label="Help & Support"
+              tint="#ffae00"
+              onPress={() => setHelpOpen(true)}
+              right={<Ionicons name="chevron-forward" size={20} color="#9a9aa5" />}
+            />
+            <Row icon="log-out-outline" label="Log out" danger tint="#ff5a6a" bubble="#ffd6da" onPress={() => setLogoutOpen(true)} last />
           </View>
         </ScrollView>
       </ResponsiveScreen>
+
+      <DialogModal
+        visible={logoutOpen}
+        title="Log out"
+        message="Are you sure you want to log out?"
+        onClose={() => setLogoutOpen(false)}
+        actions={[
+          { label: 'Cancel', onPress: () => setLogoutOpen(false) },
+          { label: 'Log out', primary: true, onPress: confirmLogout },
+        ]}
+      />
+      <DialogModal
+        visible={helpOpen}
+        title="Help & Support"
+        message="The help center is coming soon."
+        onClose={() => setHelpOpen(false)}
+        actions={[{ label: 'OK', primary: true, onPress: () => setHelpOpen(false) }]}
+      />
     </View>
   );
 }
 
+const shadow = {
+  shadowColor: '#7b2ff7',
+  shadowOpacity: 0.14,
+  shadowRadius: 8,
+  shadowOffset: { width: 0, height: 3 },
+  elevation: 3,
+};
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.screenBg },
   scroll: { flex: 1 },
-  scrollContent: { width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 17, paddingTop: 24, paddingBottom: 110 },
-  headerRow: { height: 66, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  title: { fontFamily: font.bold, fontSize: 26, lineHeight: 31, color: '#171365' },
-  subtitle: { marginTop: 3, fontFamily: font.regular, fontSize: 12, color: '#5966a1' },
-  settingsButton: {
-    width: 46,
-    height: 46,
-    marginTop: -2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 23,
-    backgroundColor: '#fff',
-  },
-  heroWrap: {
-    height: 192,
-    borderRadius: 20,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
-  },
-  hero: { position: 'absolute', left: 0, right: 0, top: 0, height: 122, overflow: 'hidden' },
-  heroShade: { ...StyleSheet.absoluteFillObject },
-  sun: { position: 'absolute', right: 28, top: 18, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,248,183,0.85)' },
-  cloud: { position: 'absolute', width: 86, height: 22, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.78)' },
-  cloudOne: { left: 12, top: 27 },
-  cloudTwo: { right: 38, top: 55 },
-  cloudThree: { left: 118, top: 70, width: 64, opacity: 0.7 },
-  mountainBack: { position: 'absolute', right: -25, bottom: -38, width: 210, height: 150, borderRadius: 70, backgroundColor: '#7da6d6', transform: [{ rotate: '32deg' }] },
-  mountainFront: { position: 'absolute', right: 0, bottom: -70, width: 170, height: 150, borderRadius: 75, backgroundColor: '#638dc4', transform: [{ rotate: '-24deg' }] },
-  castle: { position: 'absolute', right: 49, bottom: 12, width: 58, height: 76 },
-  tower: { position: 'absolute', bottom: 0, width: 20, height: 58, borderRadius: 3, backgroundColor: '#728db1' },
-  towerLeft: { left: 0 },
-  towerRight: { right: 0 },
-  castleCenter: { position: 'absolute', left: 15, bottom: 0, width: 28, height: 72, borderTopLeftRadius: 14, borderTopRightRadius: 14, backgroundColor: '#809abd' },
-  profileRow: {
+  content: { width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 24, paddingBottom: 130 },
+  title: { fontFamily: font.bold, fontSize: 28, color: INK },
+  subtitle: { fontFamily: font.regular, fontSize: 12, color: '#5966a1', marginTop: 2, marginBottom: 16 },
+
+  hero: { height: 170, borderRadius: 20, overflow: 'hidden', backgroundColor: '#c98cfe', ...shadow },
+  editCover: {
     position: 'absolute',
-    left: 17,
-    right: 17,
-    bottom: 14,
-    height: 82,
+    top: 10,
+    right: 10,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(255,255,255,0.3)',
   },
+  editCoverText: { fontFamily: font.semi, fontSize: 11, color: '#fff' },
+  profileRow: { position: 'absolute', left: 14, right: 14, bottom: 12, flexDirection: 'row', alignItems: 'center' },
+  avatarWrap: { width: 78, height: 78 },
   avatar: {
     width: 78,
     height: 78,
-    alignItems: 'center',
-    justifyContent: 'center',
     borderRadius: 39,
     borderWidth: 3,
     borderColor: '#fff',
-    backgroundColor: '#eee7ff',
+    backgroundColor: '#efe7ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
-  editButton: {
+  avatarImage: { width: '100%', height: '100%' },
+  avatarLetter: { fontFamily: font.bold, fontSize: 36, color: '#8b3dff' },
+  pencil: {
     position: 'absolute',
     right: 0,
     bottom: 0,
-    width: 25,
-    height: 25,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 13,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     borderWidth: 2,
     borderColor: '#fff',
     backgroundColor: '#6757b9',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  profileText: { marginLeft: 17, justifyContent: 'center' },
-  profileName: { fontFamily: font.bold, fontSize: 18, lineHeight: 22, color: '#17171e' },
-  email: { marginTop: 1, fontFamily: font.regular, fontSize: 10, color: '#8a8a91' },
+  profileText: { flex: 1, marginLeft: 14, minWidth: 0 },
+  name: { fontFamily: font.bold, fontSize: 20, color: '#fff' },
+  email: { fontFamily: font.regular, fontSize: 11, color: 'rgba(255,255,255,0.85)', marginTop: 1 },
   badge: {
-    height: 24,
-    marginTop: 7,
-    paddingHorizontal: 9,
     alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    borderRadius: 7,
+    height: 24,
+    paddingHorizontal: 9,
+    borderRadius: 8,
     backgroundColor: '#efeaff',
+    marginTop: 7,
   },
-  badgeText: { fontFamily: font.semi, fontSize: 9, color: '#5f55aa' },
-  completionCard: {
-    marginTop: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 16,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
-  },
-  completionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  completionTitle: { fontFamily: font.semi, fontSize: 14, color: '#17171e' },
-  completionPercent: { fontFamily: font.bold, fontSize: 14, color: colors.purple },
-  progressTrack: { height: 8, marginTop: 10, borderRadius: 5, backgroundColor: '#eee8ff', overflow: 'hidden' },
-  progressFill: { height: '100%', borderRadius: 5, backgroundColor: colors.purple },
-  completionCaption: { marginTop: 6, fontFamily: font.regular, fontSize: 10, color: '#9998a1' },
-  statsGrid: {
-    marginTop: 16,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    rowGap: 12,
-  },
-  statCard: {
-    width: '48.5%',
-    height: 82,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    borderRadius: 16,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
-  },
-  statIcon: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 24 },
-  statTextWrap: { marginLeft: 10 },
-  statValue: { fontFamily: font.bold, fontSize: 18, lineHeight: 21, color: '#17171e' },
-  statLabel: { marginTop: 2, fontFamily: font.regular, fontSize: 9, lineHeight: 12, color: '#9998a1' },
+  badgeText: { fontFamily: font.semi, fontSize: 10, color: '#5f55aa' },
+  error: { fontFamily: font.medium, fontSize: 12, color: '#ff5a5a', marginTop: 8 },
+
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12, marginTop: 16 },
+  statCard: { width: '48.5%', height: 76, borderRadius: 16, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, ...shadow },
+  statIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  statText: { marginLeft: 10, flex: 1, minWidth: 0 },
+  statValue: { fontFamily: font.bold, fontSize: 20, color: '#111', lineHeight: 24 },
+  statLabel: { fontFamily: font.medium, fontSize: 10, color: '#8d8da0' },
+
+  sectionTitle: { fontFamily: font.bold, fontSize: 20, color: INK, marginTop: 24, marginBottom: 10 },
+  card: { backgroundColor: '#fff', borderRadius: 18, paddingHorizontal: 14, ...shadow },
+  row: { minHeight: 62, flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
+  rowDivider: { borderBottomWidth: 1, borderBottomColor: '#e9e6f2' },
+  bubble: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
+  rowLabel: { flex: 1, fontFamily: font.semi, fontSize: 15, color: '#111' },
+
+  backdrop: { flex: 1, backgroundColor: 'rgba(40,10,80,0.35)', alignItems: 'center', justifyContent: 'center', padding: 24 },
+  dialog: { width: '100%', maxWidth: 340, backgroundColor: '#fff', borderRadius: 20, padding: 20 },
+  dialogTitle: { fontFamily: font.bold, fontSize: 18, color: INK, textAlign: 'center' },
+  dialogMessage: { fontFamily: font.medium, fontSize: 14, color: '#6b6b80', textAlign: 'center', marginTop: 8 },
+  dialogActions: { flexDirection: 'row', gap: 12, marginTop: 20 },
+  dialogBtn: { flex: 1, height: 46, borderRadius: 999, backgroundColor: '#f1e8ff', alignItems: 'center', justifyContent: 'center' },
+  dialogBtnPrimary: { backgroundColor: '#8b3dff' },
+  dialogBtnText: { fontFamily: font.bold, fontSize: 14, color: '#8b3dff' },
+  dialogBtnTextPrimary: { color: '#fff' },
 });

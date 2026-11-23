@@ -7,6 +7,8 @@ const express = require('express');
 const helmet = require('helmet');
 const mongoose = require('mongoose');
 const authRoutes = require('./routes/auth');
+const taskRoutes = require('./routes/tasks');
+const profileRoutes = require('./routes/profile');   // near the other requires
 
 const app = express();
 const allowedOrigins = (process.env.CLIENT_ORIGINS || '')
@@ -30,6 +32,7 @@ app.use(cors({
     callback(error);
   },
 }));
+app.use('/api/profile', express.json({ limit: '3mb' }), profileRoutes);
 app.use(express.json({ limit: '10kb' }));
 
 app.get('/health', (req, res) => {
@@ -40,6 +43,7 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/tasks', taskRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
