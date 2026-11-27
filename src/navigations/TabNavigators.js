@@ -10,6 +10,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 import AddTaskScreen from '../screens/AddTaskScreen';
 import PrivacySecurityScreen from '../screens/PrivacySecurityScreen';
 import { colors, font } from '../theme';
+import { useTheme } from '../ThemeContext';
 
 const Tab = createBottomTabNavigator();
 
@@ -23,17 +24,24 @@ export default function TabNavigator({
   onDeleteTask,
   profileImages,
   onChangeImage,
+  pushEnabled,
+  onTogglePush,
+  token,
+  onUserUpdated,
+  onAccountDeleted,
 }) {
   const insets = useSafeAreaInsets();
+  const { theme: t, dark } = useTheme();
 
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: colors.purple,
+        tabBarActiveTintColor: dark ? '#d3a6ff' : colors.purple,
+        tabBarLabelPosition: 'below-icon',
         tabBarInactiveTintColor: colors.tabGrey,
         tabBarLabelStyle: styles.tabLabel,
-        tabBarStyle: [styles.tabBar, { height: 64 + insets.bottom, paddingBottom: Math.max(insets.bottom, 6) }],
+        tabBarStyle: [styles.tabBar, { height: 64 + insets.bottom, paddingBottom: Math.max(insets.bottom, 6), backgroundColor: t.tabBar, borderTopColor: t.divider }],
         tabBarItemStyle: styles.tabItem,
         tabBarIcon: ({ color, focused }) => {
           const iconName = {
@@ -46,7 +54,7 @@ export default function TabNavigator({
           if (!iconName) return null;
 
           return (
-            <View style={[styles.iconContainer, focused && styles.activeIconContainer]}>
+            <View style={[styles.iconContainer, focused && { backgroundColor: dark ? 'rgba(172,77,255,0.3)' : 'rgba(229,199,255,0.6)' }]}>
               <Ionicons name={iconName} size={24} color={color} />
             </View>
           );
@@ -55,7 +63,7 @@ export default function TabNavigator({
     >
       <Tab.Screen name="Home">
         {() => (
-          <HomeScreen user={user} tasks={tasks} onToggleTask={onToggleTask} />
+          <HomeScreen user={user} tasks={tasks} onToggleTask={onToggleTask} pushEnabled={pushEnabled} />
         )}
       </Tab.Screen>
 
@@ -87,6 +95,8 @@ export default function TabNavigator({
             user={user}
             profileImages={profileImages}
             onChangeImage={onChangeImage}
+            pushEnabled={pushEnabled}
+            onTogglePush={onTogglePush}
           />
         )}
       </Tab.Screen>
@@ -108,7 +118,14 @@ export default function TabNavigator({
           tabBarItemStyle: { display: 'none' },
         }}
       >
-        {() => <PrivacySecurityScreen user={user} />}
+        {() => (
+          <PrivacySecurityScreen
+            user={user}
+            token={token}
+            onUserUpdated={onUserUpdated}
+            onAccountDeleted={onAccountDeleted}
+          />
+        )}
       </Tab.Screen>
     </Tab.Navigator>
   );
@@ -149,6 +166,6 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontFamily: font.medium,
     fontSize: 11,
-    marginTop: 2,
+    marginTop: 4,
   },
 });

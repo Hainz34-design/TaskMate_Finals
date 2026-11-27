@@ -4,8 +4,9 @@ import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import ResponsiveScreen from '../components/ResponsiveScreen';
-import BackgroundImage from '../components/BackgroundImage';
+import ThemedBackground from '../components/ThemedBackground';
 import { colors, font } from '../theme';
+import { useTheme } from '../ThemeContext';
 
 const API_KEY = process.env.EXPO_PUBLIC_OPENWEATHER_API_KEY || '0f03260387994988cf67ca8a408a3ace';
 const FALLBACK_CITY = 'Cavite,PH';
@@ -86,6 +87,9 @@ const weatherUrl = (endpoint, coords) => {
 };
 
 export default function CalendarScreen({ tasks = [], onToggleTask }) {
+  const styles = useStyles();
+  const { dark } = useTheme();
+
   const now = new Date();
   const [monthIdx, setMonthIdx] = useState(() => now.getMonth());
   const [year, setYear] = useState(() => now.getFullYear());
@@ -220,7 +224,7 @@ export default function CalendarScreen({ tasks = [], onToggleTask }) {
 
   return (
     <View style={styles.root}>
-      <BackgroundImage />
+      <ThemedBackground />
       <ResponsiveScreen>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Text style={styles.headerTitle}>Calendar</Text>
@@ -308,7 +312,10 @@ export default function CalendarScreen({ tasks = [], onToggleTask }) {
 
       <Modal visible={modalOpen} animationType="slide" transparent onRequestClose={() => setModalOpen(false)}>
         <View style={styles.modalBackdrop}>
-          <LinearGradient colors={['#ad52f8', '#b260f4', '#c97bfa']} style={styles.modalSheet}>
+          <LinearGradient
+            colors={dark ? ['#2a1456', '#3a1c78', '#4b2593'] : ['#ad52f8', '#b260f4', '#c97bfa']}
+            style={styles.modalSheet}
+          >
             <View style={styles.modalTopBar}>
               <View style={styles.locationRow}>
                 <Ionicons name="location" size={18} color="#fff" />
@@ -390,12 +397,13 @@ export default function CalendarScreen({ tasks = [], onToggleTask }) {
 
 const shadow = { shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 3 };
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.screenBg },
+// Styles are built from the current theme (light or dark)
+const makeStyles = (t) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: t.bg },
   scroll: { flex: 1 },
   content: { width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 130 },
-  headerTitle: { fontFamily: font.bold, fontSize: 32, lineHeight: 40, color: '#0a0a0a' },
-  subtitle: { fontFamily: font.regular, fontSize: 16, lineHeight: 22, color: '#9d9db5', marginTop: 3, marginBottom: 20 },
+  headerTitle: { fontFamily: font.bold, fontSize: 32, lineHeight: 40, color: t.text },
+  subtitle: { fontFamily: font.regular, fontSize: 16, lineHeight: 22, color: t.muted, marginTop: 3, marginBottom: 20 },
   weatherHero: { width: '100%', height: 98, borderRadius: 28, overflow: 'hidden', marginBottom: 20 },
   weatherMain: { flexDirection: 'row', alignItems: 'center', height: '100%', paddingHorizontal: 14, zIndex: 2 },
   weatherIconWrap: { width: 54, height: 70, alignItems: 'center', justifyContent: 'center' },
@@ -410,31 +418,31 @@ const styles = StyleSheet.create({
   heroCloudRight: { position: 'absolute', right: -21, bottom: -14, zIndex: 1 },
   monthNav: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 },
   calNavArrow: { width: 46, height: 46, borderRadius: 23, backgroundColor: '#c29af9', alignItems: 'center', justifyContent: 'center' },
-  calMonthText: { flex: 1, fontFamily: font.bold, fontSize: 20, textAlign: 'center', color: '#0a0a0a' },
-  calendarCard: { backgroundColor: '#fff', borderRadius: 32, overflow: 'hidden', ...shadow, marginBottom: 22, paddingBottom: 10 },
+  calMonthText: { flex: 1, fontFamily: font.bold, fontSize: 20, textAlign: 'center', color: t.text },
+  calendarCard: { backgroundColor: t.card, borderRadius: 32, overflow: 'hidden', ...shadow, marginBottom: 22, paddingBottom: 10 },
   weekdaysRow: { flexDirection: 'row', paddingTop: 18, paddingBottom: 12, paddingHorizontal: 8 },
-  weekdayText: { flex: 1, fontFamily: font.bold, fontSize: 13, color: '#111', textAlign: 'center' },
+  weekdayText: { flex: 1, fontFamily: font.bold, fontSize: 13, color: t.text, textAlign: 'center' },
   daysGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 8, paddingBottom: 12 },
   dayCell: { width: '14.2857%', height: 44, alignItems: 'center', justifyContent: 'center', marginVertical: 1, borderRadius: 22 },
   selectedDayCell: { backgroundColor: '#b260f4' },
-  dayText: { fontFamily: font.bold, fontSize: 16, color: '#111' },
+  dayText: { fontFamily: font.bold, fontSize: 16, color: t.text },
   selectedDayText: { color: '#fff' },
   dotRow: { flexDirection: 'row', gap: 3, height: 8, marginTop: 1 },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  sectionTitle: { fontFamily: font.bold, fontSize: 22, lineHeight: 28, color: '#0a0a0a', marginBottom: 12 },
-  taskCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 14, position: 'relative', overflow: 'hidden', ...shadow },
+  sectionTitle: { fontFamily: font.bold, fontSize: 22, lineHeight: 28, color: t.text, marginBottom: 12 },
+  taskCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: t.card, borderRadius: 16, padding: 16, marginBottom: 14, position: 'relative', overflow: 'hidden', ...shadow },
   leftBar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 6 },
-  taskTitle: { fontFamily: font.semi, fontSize: 14, color: '#000' },
+  taskTitle: { fontFamily: font.semi, fontSize: 14, color: t.text },
   struck: { textDecorationLine: 'line-through', opacity: 0.5 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
   subjectBadge: { backgroundColor: 'rgba(172,77,255,0.12)', paddingHorizontal: 8, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   subjectText: { fontFamily: font.bold, fontSize: 10, color: colors.purple },
-  timeText: { fontFamily: font.medium, fontSize: 12, color: colors.lightGrey },
+  timeText: { fontFamily: font.medium, fontSize: 12, color: t.muted },
   doneButton: { backgroundColor: 'rgba(76,217,100,0.15)', paddingHorizontal: 12, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   doneButtonActive: { backgroundColor: '#4cd964' },
   doneButtonText: { fontFamily: font.bold, fontSize: 11, color: '#2ecc71' },
   doneButtonTextActive: { color: '#fff' },
-  emptyText: { fontFamily: font.medium, fontSize: 14, color: colors.lightGrey, textAlign: 'center', marginTop: 16, fontStyle: 'italic' },
+  emptyText: { fontFamily: font.medium, fontSize: 14, color: t.muted, textAlign: 'center', marginTop: 16, fontStyle: 'italic' },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(18,6,36,0.45)', justifyContent: 'flex-end' },
   modalSheet: { width: '100%', maxWidth: 560, alignSelf: 'center', maxHeight: '90%', borderTopLeftRadius: 32, borderTopRightRadius: 32, paddingTop: 20, paddingHorizontal: 18 },
   modalTopBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
@@ -461,3 +469,8 @@ const styles = StyleSheet.create({
   dailyCond: { flex: 1, fontFamily: font.medium, fontSize: 14, color: 'rgba(255,255,255,0.95)', paddingHorizontal: 8 },
   dailyRange: { fontFamily: font.bold, fontSize: 14, color: '#fff' },
 });
+
+function useStyles() {
+  const { theme } = useTheme();
+  return useMemo(() => makeStyles(theme), [theme]);
+}
