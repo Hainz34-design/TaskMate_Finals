@@ -19,8 +19,11 @@ import { loginUser, registerUser } from './src/services/authApi';
 import { createTask, deleteTask, fetchTasks, updateTask } from './src/services/taskApi';
 import { fetchProfile, saveProfileImage } from './src/services/profileApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { notifyNow, setupNotifications, syncTaskReminders } from './src/services/notifications';
+import { ThemeProvider, useTheme } from './src/ThemeContext';
 
 const SESSION_KEY = 'taskmate_session';
+const PUSH_KEY = 'taskmate_push_enabled';
 
 async function saveSession(session) {
   try {
@@ -30,10 +33,12 @@ async function saveSession(session) {
   }
 }
 
-export default function App() {
+function AppContent() {
+  const { dark } = useTheme();
   const [stage, setStage] = useState('splash');
   const [session, setSession] = useState(null);
   const [restored, setRestored] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [profileImages, setProfileImages] = useState({ avatar: '', cover: '' });
   const [loaded] = useFonts({ Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, Poppins_700Bold });
@@ -78,7 +83,36 @@ export default function App() {
     fetchProfile(session.token)
       .then((p) => setProfileImages({ avatar: p.avatar || '', cover: p.cover || '' }))
       .catch((error) => console.warn('Could not load profile pictures:', error.message));
-  }, [session]);
+  }, [session?.token]);
+
+  // Load the Push Notification switch (default: off until the user turns it on)
+  useEffect(() => {
+    AsyncStorage.getItem(PUSH_KEY)
+      .then((v) => {
+        if (v === '1') setPushEnabled(true);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Ask for notification permission once the user is logged in
+  useEffect(() => {
+    if (session?.token) setupNotifications();
+  }, [session?.token]);
+
+  // Keep the phone reminders in sync with the task list (and clear them on logout)
+  useEffect(() => {
+    syncTaskReminders(session?.token ? tasks : [], pushEnabled);
+  }, [tasks, session?.token, pushEnabled]);
+
+  const handleTogglePush = (value) => {
+    setPushEnabled(value);
+    AsyncStorage.setItem(PUSH_KEY, value ? '1' : '0').catch(() => {});
+    if (value) {
+      setupNotifications().then((ok) => {
+        if (ok) notifyNow('Notifications are on', 'We will remind you when your tasks are due.');
+      });
+    }
+  };
 
   const handleLogin = async (email, password) => {
     const nextSession = await loginUser({ email, password });
@@ -129,6 +163,16 @@ export default function App() {
     setProfileImages({ avatar: saved.avatar || '', cover: saved.cover || '' });
   };
 
+  // Called after the name or email changes, so the app and the saved login stay up to date
+  const handleUserUpdated = (nextUser) => {
+    setSession((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, user: { ...prev.user, ...nextUser } };
+      saveSession(next);
+      return next;
+    });
+  };
+
   const handleDeleteTask = async (id) => {
     if (!session?.token) return;
     const previous = tasks;
@@ -144,7 +188,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <View style={{ flex: 1 }}>
-        <StatusBar style={stage === 'home' || stage === 'splash' ? 'dark' : 'auto'} />
+        <StatusBar style={stage === 'home' && dark ? 'light' : stage === 'home' || stage === 'splash' ? 'dark' : 'auto'} />
         {stage === 'splash' && <StartupSplash fontsLoaded={loaded} />}
         {stage === 'welcome' && <WelcomeFlow onDone={() => setStage('login')} />}
         {stage === 'login' && <LoginScreen onLogin={handleLogin} onGoToSignup={() => setStage('signup')} />}
@@ -160,10 +204,23 @@ export default function App() {
               onDeleteTask={handleDeleteTask}
               profileImages={profileImages}
               onChangeImage={handleChangeImage}
+              pushEnabled={pushEnabled}
+              onTogglePush={handleTogglePush}
+              token={session?.token}
+              onUserUpdated={handleUserUpdated}
+              onAccountDeleted={handleLogout}
             />
           </NavigationContainer>
         )}
       </View>
     </SafeAreaProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }

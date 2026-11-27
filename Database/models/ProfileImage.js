@@ -6,6 +6,7 @@ const profileImageSchema = new mongoose.Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
     avatar: { type: String, default: '' },
     cover: { type: String, default: '' },
+    phone: { type: String, default: '' }, // optional contact number
   },
   { timestamps: true }
 );

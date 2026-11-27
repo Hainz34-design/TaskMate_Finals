@@ -1,13 +1,13 @@
-// this is taskscreen.js
-
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ResponsiveScreen from '../components/ResponsiveScreen';
-import BackgroundImage from '../components/BackgroundImage';
+import ThemedBackground from '../components/ThemedBackground';
 import { colors, font } from '../theme';
+import { useTheme } from '../ThemeContext';
 
 export default function TasksScreen({ tasks = [], onToggleTask, onDeleteTask }) {
+  const styles = useStyles();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('ALL');
   const [activePriority, setActivePriority] = useState('ALL');
@@ -31,7 +31,7 @@ export default function TasksScreen({ tasks = [], onToggleTask, onDeleteTask }) 
 
   return (
     <View style={styles.root}>
-      <BackgroundImage />
+      <ThemedBackground />
       <ResponsiveScreen>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Text style={styles.headerTitle}>My Tasks</Text>
@@ -151,37 +151,42 @@ export default function TasksScreen({ tasks = [], onToggleTask, onDeleteTask }) 
 
 const shadow = { shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 3 };
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.screenBg },
+const makeStyles = (t) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: t.bg },
   scroll: { flex: 1 },
   content: { width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 24, paddingBottom: 130 },
-  headerTitle: { fontFamily: font.bold, fontSize: 30, color: '#000' },
-  subtitle: { fontFamily: font.medium, fontSize: 14, color: colors.lightGrey, marginTop: 4, marginBottom: 20 },
-  searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, height: 50, paddingHorizontal: 16, marginBottom: 16, ...shadow },
+  headerTitle: { fontFamily: font.bold, fontSize: 30, color: t.text },
+  subtitle: { fontFamily: font.medium, fontSize: 14, color: t.muted, marginTop: 4, marginBottom: 20 },
+  searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: t.card, borderRadius: 16, height: 50, paddingHorizontal: 16, marginBottom: 16, ...shadow },
   searchIcon: { marginRight: 10 },
-  searchInput: { flex: 1, fontFamily: font.medium, fontSize: 15, color: '#000' },
-  filterTabRow: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 16, padding: 4, marginBottom: 16, ...shadow },
+  searchInput: { flex: 1, fontFamily: font.medium, fontSize: 15, color: t.text },
+  filterTabRow: { flexDirection: 'row', backgroundColor: t.card, borderRadius: 16, padding: 4, marginBottom: 16, ...shadow },
   filterTab: { flex: 1, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 12 },
   activeFilterTab: { backgroundColor: colors.purple },
-  filterTabText: { fontFamily: font.semi, fontSize: 13, color: colors.lightGrey },
+  filterTabText: { fontFamily: font.semi, fontSize: 13, color: t.muted },
   activeFilterTabText: { color: '#fff' },
   priorityFilterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 24 },
-  priorityPill: { paddingHorizontal: 12, height: 32, borderRadius: 16, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#eee' },
+  priorityPill: { paddingHorizontal: 12, height: 32, borderRadius: 16, backgroundColor: t.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: t.divider },
   activePriorityPill: { borderColor: colors.purple, backgroundColor: 'rgba(172,77,255,0.1)' },
-  priorityPillText: { fontFamily: font.semi, fontSize: 12, color: colors.lightGrey },
+  priorityPillText: { fontFamily: font.semi, fontSize: 12, color: t.muted },
   activePriorityPillText: { fontFamily: font.bold, color: colors.purple },
-  taskCard: { minHeight: 90, flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: 16, backgroundColor: '#fff', marginBottom: 16, padding: 14, ...shadow },
+  taskCard: { minHeight: 90, flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: 16, backgroundColor: t.card, marginBottom: 16, padding: 14, ...shadow },
   check: { marginTop: 2, width: 28, height: 28, borderRadius: 14, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   taskContent: { flex: 1, minWidth: 0 },
-  taskTitle: { fontFamily: font.semi, fontSize: 15, color: '#000', flexShrink: 1 },
-  taskDesc: { fontFamily: font.medium, fontSize: 13, color: colors.lightGrey, marginTop: 3 },
+  taskTitle: { fontFamily: font.semi, fontSize: 15, color: t.text, flexShrink: 1 },
+  taskDesc: { fontFamily: font.medium, fontSize: 13, color: t.muted, marginTop: 3 },
   struck: { textDecorationLine: 'line-through', opacity: 0.5 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' },
   badge: { paddingHorizontal: 8, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   badgeText: { fontFamily: font.bold, fontSize: 10 },
   subjectBadge: { backgroundColor: 'rgba(172,77,255,0.12)', paddingHorizontal: 8, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   subjectText: { fontFamily: font.bold, fontSize: 10, color: colors.purple },
-  code: { fontFamily: font.medium, fontSize: 11, color: colors.lightGrey, flexShrink: 1 },
+  code: { fontFamily: font.medium, fontSize: 11, color: t.muted, flexShrink: 1 },
   deleteBtn: { padding: 4 },
-  emptyText: { fontFamily: font.medium, fontSize: 14, color: colors.lightGrey, textAlign: 'center', marginTop: 32, fontStyle: 'italic' },
+  emptyText: { fontFamily: font.medium, fontSize: 14, color: t.muted, textAlign: 'center', marginTop: 32, fontStyle: 'italic' },
 });
+
+function useStyles() {
+  const { theme } = useTheme();
+  return useMemo(() => makeStyles(theme), [theme]);
+}
