@@ -18,6 +18,8 @@ import ResponsiveScreen from '../components/ResponsiveScreen';
 import BackgroundImage from '../components/BackgroundImage';
 import { colors, font } from '../theme';
 
+// log in screen
+
 const book = require('../../assets/Vector book.png');
 
 function Field({ label, icon, placeholder, value, onChangeText, secure, keyboardType }) {
