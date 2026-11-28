@@ -116,9 +116,9 @@ export default function CalendarScreen({ tasks = [], onToggleTask }) {
             const [g] = await Location.reverseGeocodeAsync(next);
             const name = [g?.city || g?.subregion || g?.district, g?.region].filter(Boolean).join(', ');
             if (active && name) setPlaceLabel(name);
-          } catch {}
+          } catch { }
         }
-      } catch {}
+      } catch { }
       finally { if (active) setLocReady(true); }
     })();
     return () => { active = false; };
