@@ -29,6 +29,7 @@ export default function TabNavigator({
   token,
   onUserUpdated,
   onAccountDeleted,
+  googleAccessToken = null,
 }) {
   const insets = useSafeAreaInsets();
   const { theme: t, dark } = useTheme();
@@ -63,7 +64,14 @@ export default function TabNavigator({
     >
       <Tab.Screen name="Home">
         {() => (
-          <HomeScreen user={user} tasks={tasks} onToggleTask={onToggleTask} pushEnabled={pushEnabled} />
+          <HomeScreen
+            user={user}
+            tasks={tasks}
+            onToggleTask={onToggleTask}
+            pushEnabled={pushEnabled}
+            profileImages={profileImages}
+            googleAccessToken={googleAccessToken}
+          />
         )}
       </Tab.Screen>
 
@@ -83,6 +91,7 @@ export default function TabNavigator({
             tasks={tasks}
             onToggleTask={onToggleTask}
             onDeleteTask={onDeleteTask}
+            googleAccessToken={googleAccessToken}
           />
         )}
       </Tab.Screen>

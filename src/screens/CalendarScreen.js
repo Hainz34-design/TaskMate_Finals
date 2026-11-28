@@ -17,18 +17,23 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const cap = (s = '') => (s ? s[0].toUpperCase() + s.slice(1) : '');
 
 function parseDueDate(value) {
-  if (typeof value !== 'string') return null;
-  const m1 = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(value.trim());
-  const m2 = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(value.trim());
-  if (!m1 && !m2) return null;
-
-  const year = Number(m1 ? m1[3] : m2[1]);
-  const month = Number(m1 ? m1[1] : m2[2]) - 1;
-  const day = Number(m1 ? m1[2] : m2[3]);
-  const d = new Date(year, month, day);
-  return d.getFullYear() === year && d.getMonth() === month && d.getDate() === day
-    ? { year, month, day }
-    : null;
+  if (!value) return null;
+  if (typeof value === 'string') {
+    const m1 = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(value.trim());
+    const m2 = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(value.trim());
+    const match = m1 || m2;
+    if (match) {
+      const year = Number(m1 ? match[3] : match[1]);
+      const month = Number(m1 ? match[1] : match[2]) - 1;
+      const day = Number(m1 ? match[2] : match[3]);
+      const d = new Date(year, month, day);
+      if (d.getFullYear() === year && d.getMonth() === month && d.getDate() === day) {
+        return { year, month, day };
+      }
+    }
+  }
+  const dt = new Date(value);
+  return Number.isNaN(dt.getTime()) ? null : { year: dt.getFullYear(), month: dt.getMonth(), day: dt.getDate() };
 }
 
 const isTaskOnDate = (task, y, m, d) => {
@@ -86,7 +91,37 @@ const weatherUrl = (endpoint, coords) => {
   return coords ? `${base}&lat=${coords.latitude}&lon=${coords.longitude}` : `${base}&q=${encodeURIComponent(FALLBACK_CITY)}`;
 };
 
-export default function CalendarScreen({ tasks = [], onToggleTask }) {
+async function getGoogleEvents(token, year, monthIdx, signal) {
+  const q = new URLSearchParams({
+    singleEvents: 'true',
+    orderBy: 'startTime',
+    timeMin: new Date(year, monthIdx, 1).toISOString(),
+    timeMax: new Date(year, monthIdx + 1, 0, 23, 59, 59).toISOString(),
+  });
+  const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${q}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    signal,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error();
+  return (data.items || []).map((ev) => {
+    const start = ev.start?.dateTime || ev.start?.date || '';
+    const dt = new Date(start);
+    return {
+      id: `gc-${ev.id}`,
+      title: ev.summary || 'Google Event',
+      subject: 'Google Calendar',
+      time: /^\d{4}-\d{2}-\d{2}$/.test(start) || Number.isNaN(dt.getTime())
+        ? 'All day'
+        : dt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+      dueDate: start,
+      isGoogle: true,
+      priority: { color: '#4285F4' },
+    };
+  });
+}
+
+export default function CalendarScreen({ tasks = [], onToggleTask, googleAccessToken = null }) {
   const styles = useStyles();
   const { dark } = useTheme();
 
@@ -94,6 +129,7 @@ export default function CalendarScreen({ tasks = [], onToggleTask }) {
   const [monthIdx, setMonthIdx] = useState(() => now.getMonth());
   const [year, setYear] = useState(() => now.getFullYear());
   const [selectedDay, setSelectedDay] = useState(() => String(now.getDate()));
+  const [gcEvents, setGcEvents] = useState([]);
 
   const [coords, setCoords] = useState(null);
   const [placeLabel, setPlaceLabel] = useState(null);
@@ -179,6 +215,17 @@ export default function CalendarScreen({ tasks = [], onToggleTask }) {
     return () => ctrl.abort();
   }, [modalOpen, locReady, weatherStatus, loadWeather, loadForecast]);
 
+  useEffect(() => {
+    if (!googleAccessToken) { setGcEvents([]); return; }
+    const ctrl = new AbortController();
+    getGoogleEvents(googleAccessToken, year, monthIdx, ctrl.signal)
+      .then((items) => !ctrl.signal.aborted && setGcEvents(items))
+      .catch(() => !ctrl.signal.aborted && setGcEvents([]));
+    return () => ctrl.abort();
+  }, [googleAccessToken, year, monthIdx]);
+
+  const allItems = useMemo(() => [...tasks, ...gcEvents], [tasks, gcEvents]);
+
   const hourly = useMemo(
     () => forecastList.slice(0, 8).map((item, idx) => {
       const w = item.weather?.[0] || {};
@@ -212,13 +259,13 @@ export default function CalendarScreen({ tasks = [], onToggleTask }) {
 
   const getDots = (dayNum) => {
     if (!dayNum) return [];
-    const cols = tasks
+    const cols = allItems
       .filter((t) => isTaskOnDate(t, year, monthIdx, dayNum))
-      .map((t) => (t.priority?.label === 'HIGH' ? '#ff6262' : t.priority?.label === 'MEDIUM' ? '#ffae00' : '#4cd964'));
+      .map((t) => (t.priority?.color || (t.priority?.label === 'HIGH' ? '#ff6262' : t.priority?.label === 'MEDIUM' ? '#ffae00' : '#4cd964')));
     return [...new Set(cols)].slice(0, 3);
   };
 
-  const dayTasks = tasks.filter((t) => isTaskOnDate(t, year, monthIdx, Number(selectedDay)));
+  const dayTasks = allItems.filter((t) => isTaskOnDate(t, year, monthIdx, Number(selectedDay)));
   const locationText = weather?.city || placeLabel || FALLBACK_CITY;
   const isOk = weatherStatus === 'success' && weather;
 
@@ -301,9 +348,11 @@ export default function CalendarScreen({ tasks = [], onToggleTask }) {
                     <Text style={styles.timeText}>{t.time || '10:30 am'}</Text>
                   </View>
                 </View>
-                <Pressable onPress={() => onToggleTask(t.id)} style={[styles.doneButton, t.completed && styles.doneButtonActive]}>
-                  <Text style={[styles.doneButtonText, t.completed && styles.doneButtonTextActive]}>{t.completed ? 'Done' : 'Mark Done'}</Text>
-                </Pressable>
+                {!t.isGoogle && (
+                  <Pressable onPress={() => onToggleTask(t.id)} style={[styles.doneButton, t.completed && styles.doneButtonActive]}>
+                    <Text style={[styles.doneButtonText, t.completed && styles.doneButtonTextActive]}>{t.completed ? 'Done' : 'Mark Done'}</Text>
+                  </Pressable>
+                )}
               </View>
             ))
           )}
@@ -367,7 +416,7 @@ export default function CalendarScreen({ tasks = [], onToggleTask }) {
               <View style={styles.panel}>
                 <View style={styles.panelHead}>
                   <Ionicons name="calendar-outline" size={16} color="#fff" />
-                  <Text style={styles.panelTitle}>Next 7 Days</Text>
+                  <Text style={styles.panelTitle}>Next 5 Days</Text>
                 </View>
                 {forecastStatus === 'loading' ? (
                   <ActivityIndicator color="#fff" style={{ paddingVertical: 14 }} />
@@ -397,7 +446,6 @@ export default function CalendarScreen({ tasks = [], onToggleTask }) {
 
 const shadow = { shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 3 };
 
-// Styles are built from the current theme (light or dark)
 const makeStyles = (t) => StyleSheet.create({
   root: { flex: 1, backgroundColor: t.bg },
   scroll: { flex: 1 },

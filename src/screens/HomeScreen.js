@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,11 +14,46 @@ import { useTheme } from '../ThemeContext';
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-function formatTodayDate(date = new Date()) {
+function formatTodayDate(date = new Date(), timeZone) {
+  if (timeZone) {
+    try {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        timeZone,
+      }).formatToParts(date);
+      const wk = parts.find((p) => p.type === 'weekday')?.value;
+      const mo = parts.find((p) => p.type === 'month')?.value;
+      const dy = parts.find((p) => p.type === 'day')?.value;
+      if (wk && mo && dy) return `${wk}, ${mo} ${dy}`;
+    } catch {}
+  }
   const dayName = WEEKDAYS[date.getDay()];
   const monthName = MONTHS[date.getMonth()];
   const dayNumber = date.getDate();
   return `${dayName}, ${monthName} ${dayNumber}`;
+}
+
+async function fetchGoogleCalendarTodayLabel(accessToken, signal) {
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0).toISOString();
+  const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
+  const params = new URLSearchParams({
+    singleEvents: 'true',
+    orderBy: 'startTime',
+    timeMin: startOfDay,
+    timeMax: endOfDay,
+    maxResults: '1',
+  });
+
+  const res = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params.toString()}`,
+    { headers: { Authorization: `Bearer ${accessToken}` }, signal }
+  );
+  const data = await res.json();
+  if (!res.ok) throw new Error();
+  return formatTodayDate(now, data?.timeZone);
 }
 
 // dueDate is stored as MM/DD/YYYY. Returns a Date at midnight, or null if there is no due date.
@@ -50,13 +85,34 @@ function Ring({ progress }) {
   );
 }
 
-export default function HomeScreen({ user, tasks = [], onToggleTask, pushEnabled = false }) {
+export default function HomeScreen({
+  user,
+  tasks = [],
+  onToggleTask,
+  pushEnabled = false,
+  profileImages = {},
+  googleAccessToken = null,
+}) {
   const styles = useStyles();
   const { theme: t } = useTheme();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const displayName = user?.fullName?.trim().split(/\s+/)[0] || 'User';
-  const [todayLabel] = useState(() => formatTodayDate(new Date()));
+  const [todayLabel, setTodayLabel] = useState(() => formatTodayDate(new Date()));
+
+  useEffect(() => {
+    if (!googleAccessToken) {
+      setTodayLabel(formatTodayDate(new Date()));
+      return;
+    }
+    const ctrl = new AbortController();
+    fetchGoogleCalendarTodayLabel(googleAccessToken, ctrl.signal)
+      .then((label) => {
+        if (!ctrl.signal.aborted && label) setTodayLabel(label);
+      })
+      .catch(() => {});
+    return () => ctrl.abort();
+  }, [googleAccessToken]);
 
   const [intro] = useState(() => new Animated.Value(0));
 
@@ -109,7 +165,7 @@ export default function HomeScreen({ user, tasks = [], onToggleTask, pushEnabled
   );
   let streak = 0;
   const cursor = new Date();
-  if (!doneDays.has(dayKey(cursor))) cursor.setDate(cursor.getDate() - 1); // today may not be done yet
+  if (!doneDays.has(dayKey(cursor))) cursor.setDate(cursor.getDate() - 1);
   while (doneDays.has(dayKey(cursor))) {
     streak += 1;
     cursor.setDate(cursor.getDate() - 1);
@@ -157,9 +213,13 @@ export default function HomeScreen({ user, tasks = [], onToggleTask, pushEnabled
             </View>
             <View style={styles.headerIcons}>
               <NotificationBell tasks={tasks} userId={user?.id} enabled={pushEnabled} />
-              <LinearGradient colors={['#ac4dff', '#c98cfe']} style={styles.avatar}>
-                <Text style={styles.avatarText}>{displayName.charAt(0).toUpperCase()}</Text>
-              </LinearGradient>
+              {profileImages?.avatar ? (
+                <Image source={{ uri: profileImages.avatar }} style={styles.avatarImage} resizeMode="cover" />
+              ) : (
+                <LinearGradient colors={['#ac4dff', '#c98cfe']} style={styles.avatar}>
+                  <Text style={styles.avatarText}>{displayName.charAt(0).toUpperCase()}</Text>
+                </LinearGradient>
+              )}
             </View>
           </View>
 
@@ -203,7 +263,7 @@ export default function HomeScreen({ user, tasks = [], onToggleTask, pushEnabled
             ))}
           </Animated.View>
 
-          {/* Overdue (only when there is something overdue) */}
+          {/* Overdue */}
           {overdueTasks.length > 0 && (
             <>
               <View style={styles.sectionRow}>
@@ -271,6 +331,7 @@ const makeStyles = (t) => StyleSheet.create({
   headerIcons: { flexDirection: 'row', gap: 12 },
   bell: { width: 45, height: 44, borderRadius: 15, backgroundColor: 'rgba(229,199,255,0.75)', alignItems: 'center', justifyContent: 'center' },
   avatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  avatarImage: { width: 44, height: 44, borderRadius: 22 },
   avatarText: { fontFamily: font.bold, fontSize: 20, color: '#fff' },
   cardWrap: { minHeight: 116, marginBottom: 19 },
   card: { minHeight: 116, borderRadius: 22, padding: 14, justifyContent: 'center', ...shadow, shadowOpacity: 0.2 },
