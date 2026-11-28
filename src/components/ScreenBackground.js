@@ -1,17 +1,19 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import BackgroundImage from './BackgroundImage';
+import ThemedBackground from './ThemedBackground';
+import { useTheme } from '../ThemeContext';
 
-// Wrap every screen in this so they all share the same background.
+// Wrap a screen in this to get the shared background (light or dark)
 export default function ScreenBackground({ children, style }) {
+  const { theme } = useTheme();
   return (
-    <View style={[styles.root, style]}>
-      <BackgroundImage />
+    <View style={[styles.root, { backgroundColor: theme.bg }, style]}>
+      <ThemedBackground />
       {children}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f1e8ff' },
+  root: { flex: 1 },
 });

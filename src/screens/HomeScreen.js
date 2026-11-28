@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle } from 'react-native-svg';
@@ -6,8 +6,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ResponsiveScreen from '../components/ResponsiveScreen';
-import BackgroundImage from '../components/BackgroundImage';
+import ThemedBackground from '../components/ThemedBackground';
+import NotificationBell from '../components/NotificationBell';
 import { colors, font } from '../theme';
+import { useTheme } from '../ThemeContext';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -48,7 +50,9 @@ function Ring({ progress }) {
   );
 }
 
-export default function HomeScreen({ user, tasks = [], onToggleTask }) {
+export default function HomeScreen({ user, tasks = [], onToggleTask, pushEnabled = false }) {
+  const styles = useStyles();
+  const { theme: t } = useTheme();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const displayName = user?.fullName?.trim().split(/\s+/)[0] || 'User';
@@ -135,14 +139,14 @@ export default function HomeScreen({ user, tasks = [], onToggleTask }) {
   );
 
   const stats = [
-    { value: String(doneToday), label: 'Done Today', icon: 'checkmark-circle-outline', tint: '#4cd964', valueColor: '#000' },
-    { value: String(overdueTasks.length), label: 'Overdue', icon: 'alert-circle-outline', tint: '#ff6262', valueColor: overdueTasks.length ? '#ff6262' : '#000' },
-    { value: String(dueThisWeek), label: 'Due This Week', icon: 'calendar-outline', tint: '#2f6bff', valueColor: '#000' },
+    { value: String(doneToday), label: 'Done Today', icon: 'checkmark-circle-outline', tint: '#4cd964', valueColor: t.text },
+    { value: String(overdueTasks.length), label: 'Overdue', icon: 'alert-circle-outline', tint: '#ff6262', valueColor: overdueTasks.length ? '#ff6262' : t.text },
+    { value: String(dueThisWeek), label: 'Due This Week', icon: 'calendar-outline', tint: '#2f6bff', valueColor: t.text },
   ];
 
   return (
     <View style={styles.root}>
-      <BackgroundImage />
+      <ThemedBackground />
       <ResponsiveScreen>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.headerRow}>
@@ -152,9 +156,7 @@ export default function HomeScreen({ user, tasks = [], onToggleTask }) {
               <Text style={[styles.greeting, { color: colors.purple }]}>{displayName}!</Text>
             </View>
             <View style={styles.headerIcons}>
-              <View style={styles.bell}>
-                <Ionicons name="notifications-outline" size={24} color={colors.purple} />
-              </View>
+              <NotificationBell tasks={tasks} userId={user?.id} enabled={pushEnabled} />
               <LinearGradient colors={['#ac4dff', '#c98cfe']} style={styles.avatar}>
                 <Text style={styles.avatarText}>{displayName.charAt(0).toUpperCase()}</Text>
               </LinearGradient>
@@ -259,13 +261,13 @@ export default function HomeScreen({ user, tasks = [], onToggleTask }) {
 
 const shadow = { shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 4, shadowOffset: { width: 0, height: 4 }, elevation: 4 };
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.screenBg },
+const makeStyles = (t) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: t.bg },
   scroll: { flex: 1 },
   content: { width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 24, paddingBottom: 150 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
-  date: { fontFamily: font.medium, fontSize: 14, color: colors.lightGrey, lineHeight: 22 },
-  greeting: { fontFamily: font.bold, fontSize: 24, lineHeight: 36, color: '#000' },
+  date: { fontFamily: font.medium, fontSize: 14, color: t.muted, lineHeight: 22 },
+  greeting: { fontFamily: font.bold, fontSize: 24, lineHeight: 36, color: t.text },
   headerIcons: { flexDirection: 'row', gap: 12 },
   bell: { width: 45, height: 44, borderRadius: 15, backgroundColor: 'rgba(229,199,255,0.75)', alignItems: 'center', justifyContent: 'center' },
   avatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
@@ -283,26 +285,26 @@ const styles = StyleSheet.create({
   ringCenter: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
   ringText: { fontFamily: font.bold, fontSize: 18, color: '#fff' },
   stats: { flexDirection: 'row', gap: 10, marginTop: 18 },
-  tile: { flex: 1, minWidth: 0, height: 92, borderRadius: 16, backgroundColor: '#fff', paddingHorizontal: 10, justifyContent: 'center', ...shadow, shadowOpacity: 0.12 },
-  tileValue: { fontFamily: font.bold, fontSize: 19, color: '#000', lineHeight: 28 },
-  tileLabel: { fontFamily: font.semi, fontSize: 12, color: colors.lightGrey, opacity: 0.75 },
+  tile: { flex: 1, minWidth: 0, height: 92, borderRadius: 16, backgroundColor: t.card, paddingHorizontal: 10, justifyContent: 'center', ...shadow, shadowOpacity: 0.12 },
+  tileValue: { fontFamily: font.bold, fontSize: 19, color: t.text, lineHeight: 28 },
+  tileLabel: { fontFamily: font.semi, fontSize: 12, color: t.muted, opacity: 0.75 },
   sectionRow: { flexDirection: 'row', alignItems: 'center', marginTop: 26, marginBottom: 12 },
-  sectionTitle: { fontFamily: font.bold, fontSize: 21, color: '#000' },
-  countPill: { marginLeft: 'auto', width: 27, height: 20, borderRadius: 19, backgroundColor: 'rgba(229,199,255,0.75)', alignItems: 'center', justifyContent: 'center' },
+  sectionTitle: { fontFamily: font.bold, fontSize: 21, color: t.text },
+  countPill: { marginLeft: 'auto', width: 27, height: 20, borderRadius: 19, backgroundColor: t.pill, alignItems: 'center', justifyContent: 'center' },
   countPillRed: { backgroundColor: 'rgba(255,98,98,0.15)' },
   countText: { fontFamily: font.semi, fontSize: 10, color: colors.purple },
-  taskCard: { minHeight: 79, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 12, backgroundColor: '#fff', marginBottom: 14, padding: 14, ...shadow },
+  taskCard: { minHeight: 79, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 12, backgroundColor: t.card, marginBottom: 14, padding: 14, ...shadow },
   check: { width: 30, height: 30, borderRadius: 15, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   taskContent: { flex: 1, minWidth: 0, gap: 6 },
-  taskTitle: { fontFamily: font.semi, fontSize: 14, color: '#000', flexShrink: 1 },
+  taskTitle: { fontFamily: font.semi, fontSize: 14, color: t.text, flexShrink: 1 },
   struck: { textDecorationLine: 'line-through', opacity: 0.5 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 7, flexWrap: 'wrap' },
   badge: { height: 20, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   badgeText: { fontFamily: font.bold, fontSize: 12 },
-  code: { fontFamily: font.semi, fontSize: 12, color: colors.lightGrey, opacity: 0.8 },
-  upCard: { minHeight: 61, flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 13, backgroundColor: '#fff', marginTop: 12, paddingHorizontal: 18, paddingVertical: 10, ...shadow },
+  code: { fontFamily: font.semi, fontSize: 12, color: t.muted, opacity: 0.8 },
+  upCard: { minHeight: 61, flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 13, backgroundColor: t.card, marginTop: 12, paddingHorizontal: 18, paddingVertical: 10, ...shadow },
   upDot: { width: 9, height: 9, borderRadius: 5 },
-  emptyText: { fontFamily: font.medium, fontSize: 14, color: colors.lightGrey, marginBottom: 12, fontStyle: 'italic' },
+  emptyText: { fontFamily: font.medium, fontSize: 14, color: t.muted, marginBottom: 12, fontStyle: 'italic' },
   fab: {
     position: 'absolute',
     right: 20,
@@ -320,3 +322,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+
+function useStyles() {
+  const { theme } = useTheme();
+  return useMemo(() => makeStyles(theme), [theme]);
+}

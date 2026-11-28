@@ -9,12 +9,14 @@ const mongoose = require('mongoose');
 const authRoutes = require('./routes/auth');
 const taskRoutes = require('./routes/tasks');
 const profileRoutes = require('./routes/profile');   // near the other requires
+const accountRoutes = require('./routes/account');
 
 const app = express();
 const allowedOrigins = (process.env.CLIENT_ORIGINS || '')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
+
 
 app.use(helmet());
 app.use(cors({
@@ -44,6 +46,7 @@ app.get('/health', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/account', accountRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });

@@ -5,7 +5,7 @@ import { Image, StyleSheet } from 'react-native';
 export default function BackgroundImage({ style, opacity = 1 }) {
   return (
     <Image
-      source={require('../../assets/bground.png')}
+      source={require('../../assets/bgImageClear.png')}
       style={[StyleSheet.absoluteFill, styles.background, style]}
       resizeMode="cover"
     />

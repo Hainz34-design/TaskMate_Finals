@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Modal,
   Platform,
@@ -16,6 +16,7 @@ import { useNavigation } from '@react-navigation/native';
 import ScreenBackground from '../components/ScreenBackground';
 import ResponsiveScreen from '../components/ResponsiveScreen';
 import { font } from '../theme';
+import { useTheme } from '../ThemeContext';
 
 const COLORS = {
   ink: '#3a1678',
@@ -47,6 +48,7 @@ const sameDay = (a, b) =>
 /* ---------- small building blocks ---------- */
 
 function Label({ children, required }) {
+  const styles = useStyles();
   return (
     <Text style={styles.label}>
       {children}
@@ -56,6 +58,7 @@ function Label({ children, required }) {
 }
 
 function PickerField({ icon, value, placeholder, onPress, open }) {
+  const styles = useStyles();
   return (
     <Pressable style={[styles.inputBox, styles.pickerField, open && styles.inputFocused]} onPress={onPress}>
       {icon ? <Ionicons name={icon} size={18} color={COLORS.accent} style={{ marginRight: 8 }} /> : null}
@@ -68,6 +71,7 @@ function PickerField({ icon, value, placeholder, onPress, open }) {
 }
 
 function Chip({ label, active, onPress, style }) {
+  const styles = useStyles();
   return (
     <Pressable style={[styles.chip, active && styles.chipActive, style]} onPress={onPress}>
       <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
@@ -78,6 +82,7 @@ function Chip({ label, active, onPress, style }) {
 /* ---------- calendar popup ---------- */
 
 function CalendarModal({ visible, value, onClose, onSelect }) {
+  const styles = useStyles();
   const today = new Date();
   const start = value || today;
   const [view, setView] = useState(new Date(start.getFullYear(), start.getMonth(), 1));
@@ -150,6 +155,7 @@ function CalendarModal({ visible, value, onClose, onSelect }) {
 /* ---------- time popup ---------- */
 
 function TimeModal({ visible, onClose, onConfirm }) {
+  const styles = useStyles();
   const [hour, setHour] = useState(9);
   const [minute, setMinute] = useState(0);
   const [period, setPeriod] = useState('AM');
@@ -195,6 +201,7 @@ function TimeModal({ visible, onClose, onConfirm }) {
 /* ---------- main screen ---------- */
 
 export default function AddTaskScreen({ onAddTask }) {
+  const styles = useStyles();
   const navigation = useNavigation();
 
   const [title, setTitle] = useState('');
@@ -212,6 +219,8 @@ export default function AddTaskScreen({ onAddTask }) {
   const [showTime, setShowTime] = useState(false);
   const [focused, setFocused] = useState(null);
   const [showError, setShowError] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   const canSave = title.trim().length > 0;
   const focusProps = (name) => ({
@@ -219,27 +228,35 @@ export default function AddTaskScreen({ onAddTask }) {
     onBlur: () => setFocused(null),
   });
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (saving) return;
     if (!canSave) {
       setShowError(true);
       return;
     }
     const p = PRIORITIES.find((x) => x.key === priority);
-    if (onAddTask) {
-      onAddTask({
-        id: String(Date.now()),
-        title: title.trim(),
-        description: description.trim(),
-        dueDate: dueDate ? formatDate(dueDate) : '',
-        time,
-        priority: { label: p.key, color: p.color, bg: p.bg },
-        subject: category,
-        reminder,
-        repeat,
-        completed: false,
-      });
+    setSaving(true);
+    setSaveError('');
+    try {
+      if (onAddTask) {
+        await onAddTask({
+          title: title.trim(),
+          description: description.trim(),
+          dueDate: dueDate ? formatDate(dueDate) : '',
+          time,
+          priority: { label: p.key, color: p.color, bg: p.bg },
+          subject: category,
+          reminder,
+          repeat,
+          completed: false,
+        });
+      }
+      navigation.goBack();
+    } catch (e) {
+      setSaveError(e.message || 'Could not save the task. Try again.');
+    } finally {
+      setSaving(false);
     }
-    navigation.goBack();
   };
 
   return (
@@ -388,6 +405,8 @@ export default function AddTaskScreen({ onAddTask }) {
             </View>
           ) : null}
 
+          {saveError ? <Text style={[styles.errorText, { marginTop: 16 }]}>{saveError}</Text> : null}
+
           {/* Buttons */}
           <View style={styles.buttonRow}>
             <Pressable style={styles.cancelButton} onPress={() => navigation.goBack()}>
@@ -401,7 +420,7 @@ export default function AddTaskScreen({ onAddTask }) {
                 end={{ x: 1, y: 1 }}
                 style={styles.saveButton}
               >
-                <Text style={styles.saveButtonText}>Add Task</Text>
+                <Text style={styles.saveButtonText}>{saving ? 'Saving...' : 'Add Task'}</Text>
               </LinearGradient>
             </Pressable>
           </View>
@@ -441,7 +460,10 @@ const shadow = {
 
 const noOutline = Platform.select({ web: { outlineStyle: 'none' }, default: {} });
 
-const styles = StyleSheet.create({
+const makeStyles = (t) => {
+  // same names as before, but the colors follow the theme
+  const COLORS = { ink: t.ink, accent: '#8b3dff', muted: t.muted, line: t.divider, danger: '#ff5a5a' };
+  return StyleSheet.create({
   content: {
     width: '100%',
     maxWidth: 560,
@@ -457,7 +479,7 @@ const styles = StyleSheet.create({
 
   label: { fontFamily: font.bold, fontSize: 13, color: COLORS.ink, marginTop: 18, marginBottom: 8 },
   inputBox: {
-    backgroundColor: '#fff',
+    backgroundColor: t.card,
     borderRadius: 14,
     height: 52,
     paddingHorizontal: 16,
@@ -482,7 +504,7 @@ const styles = StyleSheet.create({
   priorityCard: {
     flex: 1,
     height: 74,
-    backgroundColor: '#fff',
+    backgroundColor: t.card,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
@@ -493,7 +515,7 @@ const styles = StyleSheet.create({
   priorityDot: { width: 18, height: 18, borderRadius: 9, borderWidth: 1.5, borderColor: '#000', marginBottom: 6 },
   priorityText: { fontFamily: font.semi, fontSize: 13, color: COLORS.muted },
 
-  dropdown: { backgroundColor: '#fff', borderRadius: 14, marginTop: 8, paddingVertical: 4, ...shadow },
+  dropdown: { backgroundColor: t.card, borderRadius: 14, marginTop: 8, paddingVertical: 4, ...shadow },
   dropdownItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
   dropdownText: { fontFamily: font.medium, fontSize: 14, color: COLORS.ink },
   dropdownTextActive: { fontFamily: font.bold, color: COLORS.accent },
@@ -509,19 +531,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   moreTitle: { fontFamily: font.semi, fontSize: 14, color: COLORS.ink },
-  moreBody: { backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 14, padding: 16, marginTop: 8 },
+  moreBody: { backgroundColor: t.cardSoft, borderRadius: 14, padding: 16, marginTop: 8 },
   switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   switchLabel: { fontFamily: font.medium, fontSize: 14, color: COLORS.ink },
 
   buttonRow: { flexDirection: 'row', gap: 14, marginTop: 28 },
-  cancelButton: { flex: 1, height: 54, backgroundColor: '#fff', borderRadius: 999, alignItems: 'center', justifyContent: 'center', ...shadow },
+  cancelButton: { flex: 1, height: 54, backgroundColor: t.card, borderRadius: 999, alignItems: 'center', justifyContent: 'center', ...shadow },
   cancelButtonText: { fontFamily: font.bold, fontSize: 15, color: COLORS.muted },
   saveButton: { height: 54, borderRadius: 999, alignItems: 'center', justifyContent: 'center', ...shadow },
   saveButtonText: { fontFamily: font.bold, fontSize: 15, color: '#fff' },
 
   /* modals */
   backdrop: { flex: 1, backgroundColor: 'rgba(40,10,80,0.35)', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  sheet: { width: '100%', maxWidth: 360, backgroundColor: '#fff', borderRadius: 20, padding: 18 },
+  sheet: { width: '100%', maxWidth: 360, backgroundColor: t.card, borderRadius: 20, padding: 18 },
   sheetTitle: { fontFamily: font.bold, fontSize: 16, color: COLORS.ink, textAlign: 'center' },
   sheetLabel: { fontFamily: font.semi, fontSize: 12, color: COLORS.muted, marginTop: 14, marginBottom: 8 },
   sheetFooter: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 },
@@ -538,11 +560,17 @@ const styles = StyleSheet.create({
   dayTextSelected: { color: '#fff', fontFamily: font.bold },
 
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 14, height: 36, borderRadius: 999, backgroundColor: '#f1e8ff', alignItems: 'center', justifyContent: 'center' },
+  chip: { paddingHorizontal: 14, height: 36, borderRadius: 999, backgroundColor: t.chip, alignItems: 'center', justifyContent: 'center' },
   chipSmall: { width: 48, paddingHorizontal: 0 },
   chipActive: { backgroundColor: COLORS.accent },
   chipText: { fontFamily: font.semi, fontSize: 13, color: COLORS.ink },
   chipTextActive: { color: '#fff' },
   confirmBtn: { marginTop: 18, height: 48, borderRadius: 999, backgroundColor: COLORS.accent, alignItems: 'center', justifyContent: 'center' },
   confirmText: { fontFamily: font.bold, fontSize: 15, color: '#fff' },
-});
+  });
+};
+
+function useStyles() {
+  const { theme } = useTheme();
+  return useMemo(() => makeStyles(theme), [theme]);
+}

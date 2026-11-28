@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Image, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,8 +6,9 @@ import * as ImagePicker from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { useNavigation } from '@react-navigation/native';
 import ResponsiveScreen from '../components/ResponsiveScreen';
-import BackgroundImage from '../components/BackgroundImage';
+import ThemedBackground from '../components/ThemedBackground';
 import { colors, font } from '../theme';
+import { useTheme } from '../ThemeContext';
 
 const INK = '#2b1a6b';
 
@@ -34,8 +35,10 @@ async function pickImage(kind) {
 }
 
 function StatCard({ icon, value, label, tint, bubble, wash, suffix = '' }) {
+  const styles = useStyles();
+  const { theme: t, dark } = useTheme();
   return (
-    <LinearGradient colors={['#ffffff', wash]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.statCard}>
+    <LinearGradient colors={dark ? [t.card, t.card] : ['#ffffff', wash]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.statCard}>
       <View style={[styles.statIcon, { backgroundColor: bubble }]}>
         <Ionicons name={icon} size={22} color={tint} />
       </View>
@@ -47,11 +50,13 @@ function StatCard({ icon, value, label, tint, bubble, wash, suffix = '' }) {
   );
 }
 
-function Row({ icon, label, right, onPress, danger, tint = '#a951f1', bubble = '#efe3ff', last }) {
+function Row({ icon, label, right, onPress, danger, tint = '#a951f1', bubble, last }) {
+  const styles = useStyles();
+  const { theme: t } = useTheme();
   const Wrapper = onPress ? Pressable : View;
   return (
     <Wrapper onPress={onPress} style={[styles.row, !last && styles.rowDivider]}>
-      <View style={[styles.bubble, { backgroundColor: bubble }]}>
+      <View style={[styles.bubble, { backgroundColor: bubble || t.bubble }]}>
         <Ionicons name={icon} size={22} color={tint} />
       </View>
       <Text style={[styles.rowLabel, danger && { color: '#ff5a6a' }]}>{label}</Text>
@@ -61,17 +66,20 @@ function Row({ icon, label, right, onPress, danger, tint = '#a951f1', bubble = '
 }
 
 function Toggle({ value, onValueChange }) {
+  const { dark } = useTheme();
   return (
     <Switch
       value={value}
       onValueChange={onValueChange}
-      trackColor={{ false: '#d4cdf0', true: '#b45cff' }}
+      trackColor={{ false: dark ? '#4a3b73' : '#d4cdf0', true: '#b45cff' }}
       thumbColor="#fff"
+      activeThumbColor="#fff"
     />
   );
 }
 
 function DialogModal({ visible, title, message, onClose, actions }) {
+  const styles = useStyles();
   return (
     <Modal transparent animationType="fade" visible={visible} onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
@@ -95,12 +103,19 @@ function DialogModal({ visible, title, message, onClose, actions }) {
   );
 }
 
-export default function ProfileScreen({ tasks = [], onLogout, user, profileImages = {}, onChangeImage }) {
+export default function ProfileScreen({
+  tasks = [],
+  onLogout,
+  user,
+  profileImages = {},
+  onChangeImage,
+  pushEnabled = false,
+  onTogglePush,
+}) {
+  const styles = useStyles();
+  const { dark, setDark } = useTheme();
   const navigation = useNavigation();
 
-  const [pushOn, setPushOn] = useState(false);
-  const [darkOn, setDarkOn] = useState(false);
-  const [remindOn, setRemindOn] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [busy, setBusy] = useState('');
@@ -140,7 +155,7 @@ export default function ProfileScreen({ tasks = [], onLogout, user, profileImage
 
   return (
     <View style={styles.root}>
-      <BackgroundImage />
+      <ThemedBackground />
       <ResponsiveScreen>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Text style={styles.title}>Profile</Text>
@@ -204,13 +219,12 @@ export default function ProfileScreen({ tasks = [], onLogout, user, profileImage
           {/* Settings */}
           <Text style={styles.sectionTitle}>Settings</Text>
           <View style={styles.card}>
-            <Row icon="notifications-outline" label="Push Notification" right={<Toggle value={pushOn} onValueChange={setPushOn} />} />
-            <Row icon="moon-outline" label="Dark Mode" right={<Toggle value={darkOn} onValueChange={setDarkOn} />} />
-            <Row icon="alarm-outline" label="Task Reminders" tint="#ffae00" right={<Toggle value={remindOn} onValueChange={setRemindOn} />} />
+            <Row icon="notifications-outline" label="Task Reminders" right={<Toggle value={pushEnabled} onValueChange={(v) => onTogglePush && onTogglePush(v)} />} />
+            <Row icon="moon-outline" label="Dark Mode" right={<Toggle value={dark} onValueChange={setDark} />} />
             <Row
-              icon="shield-outline"
-              label="Privacy and Security"
-              tint="#4cd964"
+              icon="person-circle-outline"
+              label="My Account"
+              tint="#a951f1"
               onPress={() => navigation.navigate('PrivacySecurity')}
               right={<Ionicons name="chevron-forward" size={20} color="#9a9aa5" />}
             />
@@ -255,12 +269,12 @@ const shadow = {
   elevation: 3,
 };
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.screenBg },
+const makeStyles = (t) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: t.bg },
   scroll: { flex: 1 },
   content: { width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 24, paddingBottom: 130 },
-  title: { fontFamily: font.bold, fontSize: 28, color: INK },
-  subtitle: { fontFamily: font.regular, fontSize: 12, color: '#5966a1', marginTop: 2, marginBottom: 16 },
+  title: { fontFamily: font.bold, fontSize: 28, color: t.heading },
+  subtitle: { fontFamily: font.regular, fontSize: 12, color: t.muted, marginTop: 2, marginBottom: 16 },
 
   hero: { height: 170, borderRadius: 20, overflow: 'hidden', backgroundColor: '#c98cfe', ...shadow },
   editCover: {
@@ -325,23 +339,28 @@ const styles = StyleSheet.create({
   statCard: { width: '48.5%', height: 76, borderRadius: 16, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, ...shadow },
   statIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   statText: { marginLeft: 10, flex: 1, minWidth: 0 },
-  statValue: { fontFamily: font.bold, fontSize: 20, color: '#111', lineHeight: 24 },
-  statLabel: { fontFamily: font.medium, fontSize: 10, color: '#8d8da0' },
+  statValue: { fontFamily: font.bold, fontSize: 20, color: t.text, lineHeight: 24 },
+  statLabel: { fontFamily: font.medium, fontSize: 10, color: t.muted },
 
-  sectionTitle: { fontFamily: font.bold, fontSize: 20, color: INK, marginTop: 24, marginBottom: 10 },
-  card: { backgroundColor: '#fff', borderRadius: 18, paddingHorizontal: 14, ...shadow },
+  sectionTitle: { fontFamily: font.bold, fontSize: 20, color: t.heading, marginTop: 24, marginBottom: 10 },
+  card: { backgroundColor: t.card, borderRadius: 18, paddingHorizontal: 14, ...shadow },
   row: { minHeight: 62, flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
-  rowDivider: { borderBottomWidth: 1, borderBottomColor: '#e9e6f2' },
+  rowDivider: { borderBottomWidth: 1, borderBottomColor: t.divider },
   bubble: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
-  rowLabel: { flex: 1, fontFamily: font.semi, fontSize: 15, color: '#111' },
+  rowLabel: { flex: 1, fontFamily: font.semi, fontSize: 15, color: t.text },
 
   backdrop: { flex: 1, backgroundColor: 'rgba(40,10,80,0.35)', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  dialog: { width: '100%', maxWidth: 340, backgroundColor: '#fff', borderRadius: 20, padding: 20 },
-  dialogTitle: { fontFamily: font.bold, fontSize: 18, color: INK, textAlign: 'center' },
-  dialogMessage: { fontFamily: font.medium, fontSize: 14, color: '#6b6b80', textAlign: 'center', marginTop: 8 },
+  dialog: { width: '100%', maxWidth: 340, backgroundColor: t.card, borderRadius: 20, padding: 20 },
+  dialogTitle: { fontFamily: font.bold, fontSize: 18, color: t.heading, textAlign: 'center' },
+  dialogMessage: { fontFamily: font.medium, fontSize: 14, color: t.muted, textAlign: 'center', marginTop: 8 },
   dialogActions: { flexDirection: 'row', gap: 12, marginTop: 20 },
-  dialogBtn: { flex: 1, height: 46, borderRadius: 999, backgroundColor: '#f1e8ff', alignItems: 'center', justifyContent: 'center' },
+  dialogBtn: { flex: 1, height: 46, borderRadius: 999, backgroundColor: t.chip, alignItems: 'center', justifyContent: 'center' },
   dialogBtnPrimary: { backgroundColor: '#8b3dff' },
   dialogBtnText: { fontFamily: font.bold, fontSize: 14, color: '#8b3dff' },
   dialogBtnTextPrimary: { color: '#fff' },
 });
+
+function useStyles() {
+  const { theme } = useTheme();
+  return useMemo(() => makeStyles(theme), [theme]);
+}
