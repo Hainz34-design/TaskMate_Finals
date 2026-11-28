@@ -8,7 +8,7 @@ import ThemedBackground from '../components/ThemedBackground';
 import { colors, font } from '../theme';
 import { useTheme } from '../ThemeContext';
 
-const API_KEY = process.env.EXPO_PUBLIC_OPENWEATHER_API_KEY || '0f03260387994988cf67ca8a408a3ace';
+const API_KEY = process.env.EXPO_PUBLIC_OPENWEATHER_API_KEY || '0de30ac94a07d78b0f54085db704da99';
 const FALLBACK_CITY = 'Cavite,PH';
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
