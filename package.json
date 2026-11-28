@@ -54,10 +54,12 @@
     "@types/react": "~19.3.0",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~58.0.4",
+    "nodemon": "^3.1.14",
     "typescript": "~6.0.3"
   },
   "scripts": {
     "start": "expo start",
+    "lucas": "nodemon Database/Server.js",
     "backend": "node Database/Server.js",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
